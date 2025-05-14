@@ -60,4 +60,4 @@ VidTube is a modern video streaming platform built with Node.js. It allows users
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [GNU General Public License v3.0](LICENSE)
