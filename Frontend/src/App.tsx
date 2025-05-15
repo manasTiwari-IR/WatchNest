@@ -4,19 +4,17 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Navbar from "./components/Navbar";
-import NotFound from "./components/NotFound";
-
+import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
 
 function App() {
   return (
     <>
       <Router>
-        <Routes>   {/* only one route matches at a time*/}
-          {/* '/' in the path name is for absolute path, without it -> relative path or child path */}
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="*" element={<NotFound />} />
+        <Routes>
+          <Route path="/" element={<LoginPage/>} ></Route>
+          <Route path="/login" element={<LoginPage />} ></Route>
+          <Route path="/signup" element={<SignUpPage />} ></Route>
         </Routes>
       </Router>
     </>

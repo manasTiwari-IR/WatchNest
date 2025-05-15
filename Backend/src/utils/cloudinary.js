@@ -18,7 +18,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
-    console.log("Image Uplaod Done");
+    console.log("Image Upload Done");
     //console.log("Uploaded image:", response.secure_url);
     //console.log("Public ID:", response.public_id);
     // once file is uploaded, delete the file from the local storage

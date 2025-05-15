@@ -1,0 +1,63 @@
+.input1,
+.input2 {
+    width: 100%;
+    padding: 0.65rem;
+    margin-top: 0.35rem;
+    border: 1.5px solid #a5b4fc;
+    border-radius: 6px;
+    background-color: #f1f5f9;
+    font-size: 1rem;
+    outline: none;
+    transition: border 0.2s;
+    box-shadow: 0 1px 2px rgba(96, 165, 250, 0.04);
+}
+
+.input1:focus,
+.input2:focus {
+    border: 1.5px solid #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+.input1-error,
+.input2-error {
+    width: 100%;
+    padding: 0.65rem;
+    margin-top: 0.35rem;
+    border: 1.5px solid #a5b4fc;
+    border-radius: 6px;
+    background-color: #f1f5f9;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(96, 165, 250, 0.04);
+
+    border: 2px solid #ef4444;
+}
+
+.input1-error:focus,
+.input2-error:focus {
+    box-shadow: 0 0 0 2px #fecaca;
+}
+
+.button1 {
+    width: 100%;
+    padding: 0.85rem;
+    background: linear-gradient(90deg, #6366f1 0%, #2dbbf8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1.08rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.12);
+    transition: all 0.2s;
+
+}
+
+.button1:hover {
+    background: linear-gradient(90deg, #4f46e5 0%, #3ba5f6 100%);
+    box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
+    transform: translateY(-2px) scale(1.03);
+}
