@@ -35,13 +35,13 @@ router.route("/register").post(
 router.route("/login").post(loginUser);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/c/:username").get(getUserChannelProfile);
+// get user channel profile by username
+// :username is a dynamic parameter that will be extracted from the URL and passed to the controller
 
 // secure routes
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
-// get user channel profile by username
-// :username is a dynamic parameter that will be extracted from the URL and passed to the controller
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
 router
   .route("/avatar")

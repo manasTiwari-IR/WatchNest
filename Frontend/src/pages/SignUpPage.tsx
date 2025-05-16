@@ -2,6 +2,7 @@ import React from "react";
 import "../cssfiles/SignUpPageStyles.css";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { Link } from "react-router-dom";
 import * as yup from "yup";
 
 type SignUpFormInputs = {
@@ -51,7 +52,7 @@ const SignUpPage: React.FC = () => {
                         <input
                             id="name"
                             {...register("name")}
-                            className={errors.name ? "input-error" : ""}
+                            className={errors.name ? "input-error signup-input" : "signup-input"}
                             placeholder="Enter your name"
                         />
                         {errors.name && <span className="error">{errors.name.message}</span>}
@@ -61,7 +62,7 @@ const SignUpPage: React.FC = () => {
                         <input
                             id="email"
                             {...register("email")}
-                            className={errors.email ? "input-error" : ""}
+                            className={errors.email ? "input-error signup-input" : "signup-input"}
                             placeholder="Enter your email"
                         />
                         {errors.email && <span className="error">{errors.email.message}</span>}
@@ -72,7 +73,7 @@ const SignUpPage: React.FC = () => {
                             id="password"
                             type="password"
                             {...register("password")}
-                            className={errors.password ? "input-error" : ""}
+                            className={errors.password ? "input-error signup-input" : "signup-input"}
                             placeholder="Enter your password"
                             autoComplete="new-password"
                         />
@@ -84,7 +85,7 @@ const SignUpPage: React.FC = () => {
                             id="confirmPassword"
                             type="password"
                             {...register("confirmPassword")}
-                            className={errors.confirmPassword ? "input-error" : ""}
+                            className={errors.confirmPassword ? "input-error signup-input" : "signup-input"}
                             placeholder="Confirm your password"
                             autoComplete="new-password"
                         />
@@ -97,15 +98,17 @@ const SignUpPage: React.FC = () => {
                     </button>
                     <p style={{ textAlign: "center", marginTop: "1rem" }}>  
                         Already have an account?
-                        <a href="/login"
+                        <Link
+                            to="/login"
                             style={{
                                 color: "#6366f1",
                                 fontWeight: 600,
                                 textDecoration: "none",
                                 marginLeft: "0.5rem",
-                            }}>
+                            }}
+                        >
                             Login
-                        </a>
+                        </Link>
                     </p>
                 </form>
             </div>
