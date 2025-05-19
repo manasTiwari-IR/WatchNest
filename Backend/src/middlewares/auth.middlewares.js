@@ -23,7 +23,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
       throw new ApiError(401, "Unauthorized");
     }
 
-    req.user = user; // pass the user to the next middleware 
+    req.user = user; // pass the user to the next middleware
     next(); // pass the execution off to whatever request the client intended
   } catch (error) {
     throw new ApiError(401, error?.message || "Unauthorized");

@@ -8,7 +8,7 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import {ObjectId} from 'mongodb';
+import crypto from "crypto";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -23,7 +23,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     // Generate refresh token
     const refreshToken = user.generateRefreshToken();
     // Save refresh token to database for long run
-    User.refreshToken = refreshToken;
+    user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
     return {
@@ -69,7 +69,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverLocalPath);
-  console.log("Avatar and CoverImage response", avatar, coverImage);
+  // console.log("Avatar and CoverImage response", avatar, coverImage);
 
   try {
     const user = await User.create({
@@ -77,13 +77,18 @@ const registerUser = asyncHandler(async (req, res) => {
       email,
       username: username.toLowerCase(),
       password,
-      avatar: [avatar?.secure_url, avatar?.public_id ] || [],
+      avatar: [avatar?.secure_url, avatar?.public_id] || [],
       coverimage: [coverImage?.secure_url, coverImage?.public_id] || [],
     });
     // Remove password and refreshToken fields from response
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken"
     );
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
+
+    // console.log("Refresh Token", createdUser?.refreshToken);
 
     if (!createdUser) {
       throw new ApiError(
@@ -92,11 +97,27 @@ const registerUser = asyncHandler(async (req, res) => {
       );
     }
 
-    console.log("User created successfully", createdUser);
-    
+    console.log("User created successfully");
+
+    const key = await generateKey();
+
     return res
       .status(201)
-      .json(new ApiResponse(201, createdUser, "User created successfully"));
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 15 * 24 * 60 * 60 * 1000,
+      })
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 60 * 60 * 1000,
+      })
+      .json(
+        new ApiResponse(201, { createdUser, key }, "User created successfully")
+      );
   } catch (error) {
     console.log("User Creation failed", error);
 
@@ -144,68 +165,84 @@ const loginUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  // Send response with access token and user
-  const options = {
-    httpOnly: true, // cookie is not accessible via client side script
-    secure: process.env.NODE_ENV === "production", // cookie will only be set on secure connections
-    // sameSite: "none", // cookie will be sent in cross-origin
-    // maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  };
+  try {
+    // Send response with access token and user
+    const refresh_options = {
+      httpOnly: true, // cookie is not accessible via client side script
+      secure: process.env.NODE_ENV === "production", // cookie will only be set on secure connections
+      sameSite: "Strict", // cookie will only be sent in a first-party context
+      maxAge: 15 * 24 * 60 * 60 * 1000, // cookie will expire in 7 days
+    };
+    const access_options = {
+      httpOnly: true, // protects against XSS attacks (XSS - cross site scripting)
+      secure: process.env.NODE_ENV === "production", // protects against MITM attacks (MITM - man in the middle)
+      sameSite: "Strict", // protects against CSRF attacks (CSRF - cross site request forgery)
+      maxAge: 60 * 60 * 1000, // cookie will expire in 15 minutes
+    };
 
-  return res
-    .status(200)
-    .cookie("refreshToken", refreshToken, options)
-    .cookie("accessToken", accessToken, options)
-    .json(new ApiResponse(200, loggedInUser, "User logged in successfully"));
+    const key = await generateKey();
+    return res
+      .status(200)
+      .cookie("refreshToken", refreshToken, refresh_options)
+      .cookie("accessToken", accessToken, access_options)
+      .json(
+        new ApiResponse(
+          200,
+          { loggedInUser, key: key },
+          "User logged in successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error while logging in user", error);
+    throw new ApiError(500, "Something went wrong while logging in user");
+  }
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incommeRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-  if (!incommeRefreshToken) {
-    throw new ApiError(400, "Refresh token is required");
+  const incommingRefreshToken =
+    req.cookies.refreshToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!incommingRefreshToken) {
+    throw new ApiError(401, "Invalid refresh token or token expired");
   }
 
   try {
     const decodedToken = jwt.verify(
-      incommeRefreshToken,
+      incommingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
     const user = await User.findById(decodedToken?._id);
     if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-    if (user?.refreshToken !== incommeRefreshToken) {
-      throw new ApiError(401, "Invalid refresh token / expired refresh token");
+      throw new ApiError(404, "User not found or Invalid token");
     }
 
-    const options = {
+    const refreshoptions = {
       httpOnly: true, // cookie is not accessible via client side script
       secure: process.env.NODE_ENV === "production", // cookie will only be set on secure connections
+      sameSite: "Strict", // cookie will only be sent in a first-party context
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    };
+    const accessoptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 60 * 60 * 1000,
     };
 
-    // Generate access token
-    const { accessToken, NewRefreshToken } =
-      user.generateAccessToken(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
 
     return res
       .status(200)
-      .cookie("refreshToken", NewRefreshToken, options)
-      .cookie("accessToken", accessToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            accessToken,
-            refreshToken: NewRefreshToken,
-          },
-          "Access token refreshed successfully"
-        )
-      );
+      .cookie("refreshToken", refreshToken, refreshoptions)
+      .cookie("accessToken", accessToken, accessoptions)
+      .json(new ApiResponse(200, {}, "Access token refreshed successfully"));
   } catch (error) {
     throw new ApiError(
       401,
-      error.message ||
-      "Something went wrong while refreshing access token"
+      error.message || "Something went wrong while refreshing access token"
     );
   }
 });
@@ -226,8 +263,10 @@ const logoutUser = asyncHandler(async (req, res) => {
   // that removes from an existing array all instances of a value or values that match a specified condition.
   // other operator in mongodb are $push, $addToSet, $pop, $pullAll, $each, $position, $slice, $sort, $bit, $isolated
   const options = {
-    httpOnly: true, // cookie is not accessible via client side script
-    secure: process.env.NODE_ENV === "production", // cookie will only be set on secure connections
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+    maxAge: 0,
   };
 
   return res
@@ -236,6 +275,52 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("accessToken", options)
     .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
+
+const verifyRefreshToken = asyncHandler(async (req, res) => {
+  // Make sure cookie-parser middleware is used in your app.js/server.js
+  const token =
+    req.cookies?.refreshToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    throw new ApiError(401, "Refresh token is expired or invalid");
+  }
+
+  try {
+    const decodedToken = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+
+    const user = await User.findById(decodedToken?._id).select(
+      "-password -refreshToken"
+    );
+
+    if (!user) {
+      // clear refresh token cookie
+      const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 0,
+      };
+
+      res
+        .clearCookie("refreshToken", options)
+        .clearCookie("accessToken", options);
+
+      throw new ApiError(401, "User Not found or Invalid Refresh Token");
+    } else {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, user, "User found successfully"));
+    }
+  } catch (error) {
+    console.error("Error while verifying refresh token");
+    throw new ApiError(401, error?.message || "Unauthorized");
+  }
+});
+
+const generateKey = async () => {
+  return crypto.randomBytes(32).toString("hex");
+};
 
 // CRUD operations
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -296,7 +381,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar is required");
   }
 
-  const user1 = await User.findById(req.user._id).select("-password -refreshToken");
+  const user1 = await User.findById(req.user._id).select(
+    "-password -refreshToken"
+  );
   //console.log("User1", user1);
 
   //console.log("Avatar id : ", user1?.avatar[1]);
@@ -332,15 +419,16 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is required");
   }
-  
-  const user1 = await User.findById(req.user._id).select("-password -refreshToken");
+
+  const user1 = await User.findById(req.user._id).select(
+    "-password -refreshToken"
+  );
 
   // delete the old avatar from cloudinary
   if (user1?.coverimage[1]) {
     console.log("Deleting old cover Image from cloudinary");
     await deleteFromCloudinary(user1?.coverimage[1]);
   }
-
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
   if (!coverImage) {
@@ -368,7 +456,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   if (!username?.trim()) {
     throw new ApiError(400, "Username is required");
   }
-// find by username
+  // find by username
   const user = await User.aggregate([
     {
       $match: {
@@ -384,7 +472,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         email: 1,
       },
     },
-  ])
+  ]);
   // Aggregation pipeline
   const channel = await User.aggregate([
     {
@@ -438,8 +526,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  
-  if(!user) {
+
+  if (!user) {
     throw new ApiError(404, "User not found");
   }
   if (!channel) {
@@ -451,10 +539,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {user}, "Channel profile details"));
+    .json(new ApiResponse(200, { user }, "Channel profile details"));
 });
 
- const getWatchHistory = asyncHandler(async (req, res) => {
+const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
@@ -524,4 +612,5 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  verifyRefreshToken,
 };

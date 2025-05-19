@@ -3,13 +3,15 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 const app = express();
-app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
-    credential: true,
+    origin: "http://localhost:5173", // Replace with your deployed frontend URL - example: https://your-frontend-url.com
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.) - if True
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.use(cookieParser());
 app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: "10mb" })); // Parse URL-encoded bodies
 app.use(express.static("public")); // Serve static files from the public directory

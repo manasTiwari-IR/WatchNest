@@ -1,3 +1,4 @@
+import { Link, useLocation } from "react-router-dom";
 
 interface NotFoundProps {
   statusCode?: number;
@@ -5,7 +6,9 @@ interface NotFoundProps {
   imageUrl?: string;
 }
 
-function NotFound({ statusCode, message, imageUrl }: NotFoundProps) {
+function ErrorPage() {
+  const location = useLocation();
+  const { statusCode = 404, message = "Page Not Found", imageUrl } = location.state as NotFoundProps || {};
   return (
     <div
       className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 h-screen text-center font-sans bg-gray-100 p-5"
@@ -20,23 +23,24 @@ function NotFound({ statusCode, message, imageUrl }: NotFoundProps) {
       {/* Text Section */}
       <div>
         <h2
-          className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-4 text-wrap" 
+          className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-4 text-wrap"
           style={{
             fontFamily: "Arial, sans-serif", // Custom inline font-family
           }}
         >
           {message || "Page Not Found"}
         </h2>
-        <a
-          href="/"
-          target="_self"
+        <Link
+          to="/"
+          reloadDocument
+          replace={true}
           className="inline-block px-6 py-3 bg-blue-500 text-white text-sm md:text-base font-semibold rounded-lg hover:bg-blue-700 transition duration-300"
         >
-          Go back to Home
-        </a>
+          Go back to Home Page
+        </Link>
       </div>
     </div>
   );
 }
 
-export default NotFound;
+export default ErrorPage;

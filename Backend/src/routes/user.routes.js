@@ -10,7 +10,8 @@ import {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory
+  getWatchHistory,
+  verifyRefreshToken
 } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
@@ -33,7 +34,8 @@ router.route("/register").post(
   registerUser
 );
 router.route("/login").post(loginUser);
-router.route("/refresh-token").post(refreshAccessToken);
+router.route("/refresh-access-token").get(refreshAccessToken);
+router.route("/verify-refresh-token").get(verifyRefreshToken);
 router.route("/c/:username").get(getUserChannelProfile);
 // get user channel profile by username
 // :username is a dynamic parameter that will be extracted from the URL and passed to the controller
@@ -41,7 +43,7 @@ router.route("/c/:username").get(getUserChannelProfile);
 // secure routes
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
-router.route("/current-user").get(verifyJWT, getCurrentUser);
+// router.route("/current-user").get(verifyJWT, getCurrentUser);
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
 router
   .route("/avatar")
