@@ -277,7 +277,6 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const verifyRefreshToken = asyncHandler(async (req, res) => {
-  // Make sure cookie-parser middleware is used in your app.js/server.js
   const token =
     req.cookies?.refreshToken ||
     req.header("Authorization")?.replace("Bearer ", "");
@@ -292,25 +291,43 @@ const verifyRefreshToken = asyncHandler(async (req, res) => {
     const user = await User.findById(decodedToken?._id).select(
       "-password -refreshToken"
     );
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 0,
+    };
 
     if (!user) {
-      // clear refresh token cookie
-      const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-        maxAge: 0,
-      };
-
-      res
-        .clearCookie("refreshToken", options)
-        .clearCookie("accessToken", options);
-
       throw new ApiError(401, "User Not found or Invalid Refresh Token");
     } else {
+      const key = await generateKey();
+      // Generate new access and refresh token
+      const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+        user._id
+      );
+      // Update refresh token in database
+      user.refreshToken = refreshToken;
+      await user.save({ validateBeforeSave: false });
       return res
         .status(200)
-        .json(new ApiResponse(200, user, "User found successfully"));
+        .clearCookie("refreshToken", options)
+        .clearCookie("accessToken", options)
+        .cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
+          maxAge: 15 * 24 * 60 * 60 * 1000,
+        })
+        .cookie("accessToken", accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
+          maxAge: 60 * 60 * 1000,
+        })
+        .json(
+          new ApiResponse(200, { user, key: key }, "User found successfully")
+        );
     }
   } catch (error) {
     console.error("Error while verifying refresh token");

@@ -51,30 +51,6 @@ interface LoginPageProps {
     redirectTo?: string;
 }
 const LoginPage: React.FC = () => {
-
-    const verifyRefreshToken = async () => {
-        const response = await fetch("http://localhost:8001/api/v1/users/verify-refresh-token", {
-            method: "GET",
-            credentials: "include", // Include cookies in the request
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-        if (response.status == 200) {
-            const data = await response.json();
-            console.log("Refresh token is valid:", data);
-            // store the data in Redux store
-            // navigate to dashboard page
-        }
-        else {
-            console.log("Refresh token is invalid or expired");
-        }
-    };
-
-    useEffect(() => {
-        verifyRefreshToken();
-    }, []);
-
     // add props to the page for link sharing etc.
     const location = useLocation();
     const dispatch = useDispatch();
@@ -86,6 +62,48 @@ const LoginPage: React.FC = () => {
     const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<LoginFormInputs>({
         resolver: yupResolver(schema),
     });
+    const [isVerifying, setIsVerifying] = React.useState(true);
+
+    const verifyRefreshToken = async () => {
+        try {
+            const response = await fetch("http://localhost:8001/api/v1/users/verify-refresh-token", {
+                method: "GET",
+                credentials: "include", // Include cookies in the request
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            if (response.status === 200) {
+                const responseData = await response.json();
+                await storeReduxData(JSON.stringify(responseData.data.user), responseData.data.key);
+                console.log("Data stored in Redux successfully (refresh token)");
+                toaster.push(
+                    (<Message type="success" showIcon
+                        style={{
+                            backgroundColor: "#fffbe6", // warm yellow
+                            color: "black",
+                            borderRadius: "22px",
+                            fontSize: ".9rem",
+                        }}>
+                        Welcome back!
+                    </Message>),
+                    { placement: 'topEnd', duration: 1500 }
+                );
+                navigate(redirectTo || "/dashboard", { replace: true });
+            }
+        } catch (error) {
+
+        }
+        finally {
+            setIsVerifying(false);
+        }
+    };
+
+    useEffect(() => {
+        verifyRefreshToken();
+        // no need of cleanup function here
+        // because we are not using any subscriptions or intervals
+    }, []);
 
     // decrypt the data
     // const decryptData = async (encryptedData: string, key: string) => {
@@ -127,12 +145,29 @@ const LoginPage: React.FC = () => {
             }
             else {
                 const responseData = await response.json();
-                // console.log(responseData.message);
-                // console.log(responseData.statusCode);
-
                 try {
                     await storeReduxData(JSON.stringify(responseData.data.loggedInUser), responseData.data.key);
                     console.log("Data stored in Redux successfully");
+                    toaster.push(
+                        (<Message showIcon closable type="success" header="Login Successful"
+                            style={{ backgroundColor: "#d1e7dd", color: "#0f5132", borderColor: "#b6e0f3" }}>
+                            Welcome back! You have successfully logged in.
+                        </Message>),
+                        { placement: 'topEnd', duration: 1000 }
+                    );
+                    try {
+                        navigate(redirectTo || "/dashboard", { replace: true });
+                    } catch (e) {
+                        console.error("Navigation error:", e);
+                        navigate("/error-page", {
+                            state: {
+                                statusCode: 500,
+                                message: "Something went wrong.",
+                                imageUrl: "../src/assets/something-went-wrong.png"
+
+                            }
+                        });
+                    }
                 } catch (error) {
                     console.error("Error in Redux:", error);
                     toaster.push(
@@ -144,30 +179,7 @@ const LoginPage: React.FC = () => {
                     );
                     return;
                 }
-
-                toaster.push(
-                    (<Message showIcon closable type="success" header="Login Successful"
-                        style={{ backgroundColor: "#d1e7dd", color: "#0f5132", borderColor: "#b6e0f3" }}>
-                        Welcome back! You have successfully logged in.
-                    </Message>),
-                    { placement: 'topEnd', duration: 1000 }
-                );
                 reset();
-
-                // Redirect to dashboard page after successful login
-                try {
-                    navigate(redirectTo || "/dashboard", { replace: true });
-                } catch (e) {
-                    console.error("Navigation error:", e);
-                    navigate("/error-page", {
-                        state: {
-                            statusCode: 500,
-                            message: "Something went wrong.",
-                            imageUrl: "../src/assets/something-went-wrong.png"
-
-                        }
-                    });
-                }
             }
         } catch (error) {
             console.error("Error during login:", error);
@@ -179,13 +191,53 @@ const LoginPage: React.FC = () => {
                 { placement: 'topEnd', duration: 2500 }
             );
         }
-    };
+    }
+
     return (
         <>
             <div className="absolute inset-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem]">
                 <div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_500px_at_50%_200px,#C9EBFF,transparent)]"></div>
             </div>
             <div
+                hidden={!isVerifying}
+                style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+                <div style={{
+                    marginBottom: "1.2rem",
+                    width: "48px",
+                    height: "48px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
+                    <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 48 48"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ animation: "spin 1s linear infinite" }}
+                    >
+                        <circle
+                            cx="24"
+                            cy="24"
+                            r="20"
+                            stroke="#6366f1"
+                            strokeWidth="6"
+                            strokeLinecap="round"
+                            strokeDasharray="31 80"
+                        />
+                    </svg>
+                </div>
+                <style>
+                    {`
+                        @keyframes spin {
+                            100% { transform: rotate(360deg); }
+                        }
+                    `}
+                </style>
+            </div>
+            <div
+                hidden={isVerifying}
                 style={{
                     minHeight: "100vh",
                     display: "flex",
@@ -338,25 +390,25 @@ const LoginPage: React.FC = () => {
             </div>
             <style>
                 {`
-                @media (max-width: 600px) {
-                    form {
-                        padding: 1.2rem !important;
-                        min-width: unset !important;
-                        }
-                    .eye-icon-login-password {
-                        top: 2.2rem !important;
-                        }
-                    .login-page-title {
-                        font-size: 1.3rem !important;
-                        }
-                    .login-page-label {
-                            font-size: .9rem !important;
-                        }
-                    .input1, .input2, .input1-error, .input2-error {
+            @media (max-width: 600px) {
+                form {
+                    padding: 1.2rem !important;
+                    min-width: unset !important;
+                    }
+                .eye-icon-login-password {
+                    top: 2.2rem !important;
+                    }
+                .login-page-title {
+                    font-size: 1.3rem !important;
+                    }
+                .login-page-label {
                         font-size: .9rem !important;
-                        }
-                }
-                `}
+                    }
+                .input1, .input2, .input1-error, .input2-error {
+                    font-size: .9rem !important;
+                    }
+            }
+            `}
             </style>
         </>
     );
