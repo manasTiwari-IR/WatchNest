@@ -43,7 +43,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const videos = await Video.aggregate([
       {
         $match: {
-          ...(userId && { owner: userId })
+          ...(userId && { owner: userId }),
         },
       },
       {
@@ -124,7 +124,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     duration: videoFileUrl?.duration || 0,
     views: 0,
   });
-
+  console.log(newVideo);
   try {
     const savedVideo = await newVideo.save();
     if (!savedVideo) {

@@ -49,6 +49,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // $or is a mongodb operator
   // that performs a logical OR operation on an array of two or more <expressions> and selects the documents that satisfy at least one of the <expressions>.
+  console.log("Checking for existing user");
   User.findOne({
     $or: [{ email }, { username }],
   }).then((user) => {
@@ -57,45 +58,45 @@ const registerUser = asyncHandler(async (req, res) => {
     }
   });
 
-  console.log("Data", req.body);
-  console.warn("Files", req.files);
+  // console.log("Data", req.body);
+  // console.warn("Files", req.files);
   // images are stored in req.files.avatar and req.files.coverImage
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverLocalPath = req.files?.coverImage[0]?.path;
-
-  if (!avatarLocalPath || !coverLocalPath) {
-    throw new ApiError(400, "Avatar and cover image are required");
-  }
-
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverLocalPath);
+  // const avatarLocalPath = req.files?.avatar[0]?.path;
+  // const coverLocalPath = req.files?.coverImage[0]?.path;
+  // if (!avatarLocalPath || !coverLocalPath) {
+  //   throw new ApiError(400, "Avatar and cover image are required");
+  // }
+  // const avatar = await uploadOnCloudinary(avatarLocalPath);
+  // const coverImage = await uploadOnCloudinary(coverLocalPath);
   // console.log("Avatar and CoverImage response", avatar, coverImage);
 
-  try {
+  try { 
     const user = await User.create({
       fullname,
       email,
-      username: username.toLowerCase(),
+      username: username,
       password,
-      avatar: [avatar?.secure_url, avatar?.public_id] || [],
-      coverimage: [coverImage?.secure_url, coverImage?.public_id] || [],
+      avatar: [],
+      coverimage: [],
+      // avatar: [avatar?.secure_url, avatar.public_id],
+      // coverimage: [coverImage?.secure_url, coverImage.public_id],
     });
+
     // Remove password and refreshToken fields from response
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken"
     );
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-      user._id
-    );
-
-    // console.log("Refresh Token", createdUser?.refreshToken);
-
+    console.log("Created User", createdUser);
     if (!createdUser) {
       throw new ApiError(
         500,
         "Something went wrong while registering the user"
       );
     }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
 
     console.log("User created successfully");
 
@@ -120,14 +121,12 @@ const registerUser = asyncHandler(async (req, res) => {
       );
   } catch (error) {
     console.log("User Creation failed", error);
-
-    if (avatar) {
-      await deleteFromCloudinary(avatar.public_id);
-    }
-    if (coverImage) {
-      await deleteFromCloudinary(coverImage.public_id);
-    }
-
+    // if (avatar) {
+    //   await deleteFromCloudinary(avatar.public_id);
+    // }
+    // if (coverImage) {
+    //   await deleteFromCloudinary(coverImage.public_id);
+    // }
     throw new ApiError(500, "Something went wrong, User not created");
   }
 });

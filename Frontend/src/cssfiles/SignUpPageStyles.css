@@ -3,6 +3,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 1rem 0;
+    width: 100%;
 }
 
 .signup-form {
@@ -10,8 +12,8 @@
     padding: 2.5rem 2rem;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
-    width: 100%;
-    max-width: 400px;
+    width: 60%;
+    max-width: 600px;
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
@@ -21,9 +23,18 @@
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
+
 }
 
-label {
+.form-group1 {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.signup-container label {
     font-size: 1rem;
     color: #6366f1;
     letter-spacing: 0.02em;
@@ -85,4 +96,80 @@ label {
 .signup-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+
+/* Responsive styles */
+@media (max-width: 900px) {
+    .signup-form {
+        max-width: 95vw;
+        padding: 2rem 1.2rem 1.5rem 1.2rem;
+    }
+}
+@media (max-width: 770px) {
+    .signup-form {
+        padding: 1.5rem 1rem 1rem 1rem;
+        border-radius: 0.7rem;
+        box-shadow: 0 1px 8px 0 rgba(0, 0, 0, 0.08);
+        max-width: 99vw;
+        font-size: 0.98rem;
+    }
+
+    .form-group1 {
+        flex-direction: column;
+        gap: 0.7rem;
+        width: 100%;
+        align-items: flex-start;
+    }
+    .signup-title{
+        font-size: 1.3rem !important;
+    }
+    .username-email {
+        width: 100% !important;
+    }
+    .signup-input , .input2{
+        font-size: .82rem !important;
+    }
+    .signup-container label, .login-page-label {
+        font-size: 0.9rem !important;
+    }
+    .lucide-eye , .lucide-eye-off{
+        width: 20px !important;
+        height: 20px !important;
+    }
+}
+@media (max-width: 600px) {
+    .signup-form {
+        padding: 1.5rem 1rem 1rem 1rem;
+        border-radius: 0.7rem;
+        box-shadow: 0 1px 8px 0 rgba(0, 0, 0, 0.08);
+        width: 85vw;
+        font-size: .9rem;
+    }
+
+    .form-group1 {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        align-items: flex-start;
+    }
+    .signup-title{
+        font-size: 1.1rem !important;
+    }
+    .username-email {
+        width: 100% !important;
+    }
+    .signup-input , .input2{
+        font-size: .78rem !important;
+    }
+    .signup-container label, .login-page-label {
+        font-size: 0.85rem !important;
+    }
+    .lucide-eye , .lucide-eye-off{
+        width: 20px !important;
+        height: 20px !important;
+    }
+    .eye-icon-login-password{
+        top:2.3rem !important;
+    }
 }

@@ -14,16 +14,25 @@ import store from './ReduxStateManagement/store.ts';
 
 function App() {
   return (
+    // <CustomProvider>
+    //   <Provider store={store}>
+    //     <Router>
+    //       <Routes>
+    //         <Route path="/" element={<Home />} ></Route>
+    //         <Route path="/login" element={<LoginPage />} ></Route>
+    //         <Route path="/signup" element={<SignUpPage />} ></Route>
+    //         <Route path="/dashboard" element={<Dashboard />} ></Route>
+    //         <Route path="/error-page" element={<ErrorPage />} ></Route>
+    //         <Route path="*" element={<ErrorPage />} />
+    //       </Routes>
+    //     </Router>
+    //   </Provider>
+    // </CustomProvider>
     <CustomProvider>
       <Provider store={store}>
         <Router>
           <Routes>
-            <Route path="/" element={<Home />} ></Route>
-            <Route path="/login" element={<LoginPage />} ></Route>
-            <Route path="/signup" element={<SignUpPage />} ></Route>
             <Route path="/dashboard" element={<Dashboard />} ></Route>
-            <Route path="/error-page" element={<ErrorPage />} ></Route>
-            <Route path="*" element={<ErrorPage />} />
           </Routes>
         </Router>
       </Provider>

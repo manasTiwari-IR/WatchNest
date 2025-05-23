@@ -1,10 +1,9 @@
-import { Link } from "react-router-dom";
-
-const Footer = () => {
+import React from 'react';  
+const Footer: React.FC<{ styles?: React.CSSProperties }> = ({ styles }) => {
     return (
-        <div className="footer p-6 bg-amber-200" >
-            <Link to="/contact" >Contact</Link>
-        </div>
+        <footer className="footer" style={styles}>
+            &copy; {new Date().getFullYear()} Manas Tiwari
+        </footer>
     );
 }
 

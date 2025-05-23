@@ -138,7 +138,7 @@ const LoginPage: React.FC = () => {
                 toaster.push(
                     (<Message showIcon closable type="error" header="Login Failed"
                         style={{ backgroundColor: "#f8d7da", color: "#721c24", borderColor: "#f5c6cb" }}>
-                        error
+                        Invalid email or password. Please try again.
                     </Message>),
                     { placement: 'topEnd', duration: 3000 }
                 );
