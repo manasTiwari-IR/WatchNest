@@ -28,7 +28,7 @@ const Home: React.FC = () => {
                 backdropFilter: "blur(0.5px)",
             }}
         >
-            <div style={{ display: "flex", width: "90%", padding: "1rem", marginTop: "1.5rem", alignItems: "center", gap: "1.1rem", }}>
+            <div style={{ display: "flex", width: "90%", padding: "1rem", marginTop: ".5rem", alignItems: "center", gap: "1.1rem", }}>
                 <img
                     src="../src/assets/android-chrome-512x512.png"
                     className="home-logo"
@@ -233,33 +233,33 @@ const Feature: React.FC<{
     title: string;
     desc: string;
 }) => (
-    <div
-        style={{
-            background: "rgba(255,255,255,1)",
-            borderRadius: "1rem",
-            padding: "1.2rem 1.5rem",
-            minWidth: 0,
-            textAlign: "center",
-            boxShadow: "0 3px 10px rgba(30,60,114,0.35)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            height: "100%",
-            transition: "all 0.2s",
-        }}
-    >
-        <div style={{ marginBottom: "0.5rem" }}>{icon}</div>
         <div
             style={{
-                fontWeight: 600,
-                fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
-                marginBottom: "0.3rem",
+                background: "rgba(255,255,255,1)",
+                borderRadius: "1rem",
+                padding: "1.2rem 1.5rem",
+                minWidth: 0,
+                textAlign: "center",
+                boxShadow: "0 3px 10px rgba(30,60,114,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                height: "100%",
+                transition: "all 0.2s",
             }}
         >
-            {title}
+            <div style={{ marginBottom: "0.5rem" }}>{icon}</div>
+            <div
+                style={{
+                    fontWeight: 600,
+                    fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
+                    marginBottom: "0.3rem",
+                }}
+            >
+                {title}
+            </div>
+            <div style={{ fontSize: "clamp(0.88rem, 2vw, 1rem)", color: "black", marginBottom: ".3rem" }}>{desc}</div>
         </div>
-        <div style={{ fontSize: "clamp(0.88rem, 2vw, 1rem)", color: "black", marginBottom: ".3rem" }}>{desc}</div>
-    </div>
-);
+    );
 
 export default Home;

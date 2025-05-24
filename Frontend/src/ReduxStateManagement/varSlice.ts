@@ -5,13 +5,14 @@ interface UserData {
     key?: string;
 }
 
-const initialState: UserData = {
+const UserDataInitialState: UserData = {
     data: undefined,
     key: undefined
 }
+
 export const UserDataSlice = createSlice({
     name: "userData",
-    initialState,
+    initialState: UserDataInitialState,
     reducers: {
         setUserData: (state, action: PayloadAction<UserData>) => {
             state.data = action.payload.data;

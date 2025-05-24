@@ -8,9 +8,9 @@ import * as yup from "yup";
 import { useToaster, Message } from "rsuite";
 import 'rsuite/dist/rsuite.min.css';
 import CryptoJS from "crypto-js";
-import { useDispatch } from "react-redux";
-// import { useSelector } from "react-redux";
+import { useDispatch , useSelector} from "react-redux";
 import { setUserData } from "../ReduxStateManagement/varSlice.ts";
+
 
 // Validation schema
 const schema = yup.object().shape({
@@ -54,7 +54,8 @@ const LoginPage: React.FC = () => {
     // add props to the page for link sharing etc.
     const location = useLocation();
     const dispatch = useDispatch();
-    // const userdata = useSelector((state: any) => state.userData);
+    // const verifyRefreshTokenResponse = useSelector((state: any) => state.verifyRefreshToken.val);
+    // console.log("Response Data:", verifyRefreshTokenResponse);
     const { redirectTo } = location.state as LoginPageProps || {};
     const toaster = useToaster();
     const navigate = useNavigate();
@@ -73,6 +74,7 @@ const LoginPage: React.FC = () => {
                     "Content-Type": "application/json",
                 },
             });
+
             if (response.status === 200) {
                 const responseData = await response.json();
                 await storeReduxData(JSON.stringify(responseData.data.user), responseData.data.key);
@@ -89,6 +91,7 @@ const LoginPage: React.FC = () => {
                     </Message>),
                     { placement: 'topEnd', duration: 1500 }
                 );
+                sessionStorage.setItem("refreshTokenVerified", "true");
                 navigate(redirectTo || "/dashboard", { replace: true });
             }
         } catch (error) {

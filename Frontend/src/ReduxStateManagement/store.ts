@@ -1,4 +1,4 @@
-import {configureStore} from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import UserDataSlice from './varSlice.ts';
 
 const store = configureStore({

@@ -7,7 +7,7 @@ import * as yup from "yup";
 import { useToaster, Message } from "rsuite";
 import 'rsuite/dist/rsuite.min.css';
 import CryptoJS from "crypto-js";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../ReduxStateManagement/varSlice.ts";
 
 type SignUpFormInputs = {
@@ -67,6 +67,7 @@ const SignUpPage: React.FC = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
+    // const verifyRefreshTokenResponse = useSelector((state: any) => state.verifyRefreshToken.val);
     const { redirectTo } = (location.state as SignupProps) || {};
     const [isVerifying, setIsVerifying] = React.useState(true);
 
@@ -95,6 +96,7 @@ const SignUpPage: React.FC = () => {
                     </Message>),
                     { placement: 'topEnd', duration: 1500 }
                 );
+                sessionStorage.setItem("refreshTokenVerified", "true");
                 navigate(redirectTo || "/dashboard", { replace: true });
             }
         } catch (error) {
@@ -252,8 +254,8 @@ const SignUpPage: React.FC = () => {
                             alignContent: "flex-start",
                             gap: "0.2rem",
                             width: "50%",
-                        }} 
-                        className="username-email">
+                        }}
+                            className="username-email">
                             <label htmlFor="username">Username*</label>
                             <input
                                 id="username"
@@ -269,8 +271,8 @@ const SignUpPage: React.FC = () => {
                             alignContent: "flex-start",
                             gap: "0.2rem",
                             width: "50%",
-                        }} 
-                        className="username-email">
+                        }}
+                            className="username-email">
                             <label htmlFor="email">Email*</label>
                             <input
                                 id="email"
@@ -281,7 +283,7 @@ const SignUpPage: React.FC = () => {
                             {errors.email && <span className="error">{errors.email.message}</span>}
                         </div>
                     </div>
-                    
+
                     {/* Password */}
                     <div style={{ position: "relative" }}>
                         <label
@@ -401,7 +403,7 @@ const SignUpPage: React.FC = () => {
                     >
                         {isSubmitting ? "Signing Up..." : "Sign Up"}
                     </button>
-                    <p style={{ textAlign: "center"}}>
+                    <p style={{ textAlign: "center" }}>
                         Already have an account?
                         <Link
                             to="/login"
