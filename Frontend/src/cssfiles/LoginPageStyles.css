@@ -2,7 +2,6 @@
 .input2 {
     width: 100%;
     padding: 0.65rem;
-    margin-top: 0.35rem;
     border: 1.5px solid #a5b4fc;
     border-radius: 6px;
     background-color: #f1f5f9;
@@ -59,8 +58,20 @@
     box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
     transform: translateY(-2px) scale(1.03);
 }
-.Login-password-input-container{
+
+.Login-password-input-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.login-password {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .5rem;
+    background-color: #f1f5f9;
+    border-radius: 6px;
+    border: 1.5px solid #a5b4fc;
 }

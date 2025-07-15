@@ -25,7 +25,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     fs.unlinkSync(localFilePath); // delete the file
     return response;
   } catch (error) {
-    console.log(error);
+    console.log("Error uploading image(Cloudinary):", error);
     fs.unlinkSync(localFilePath); // delete the file
     return null;
   }
@@ -49,13 +49,33 @@ const autoCropUrl = cloudinary.url("images", {
 
 const deleteFromCloudinary = async (publicId) => {
   try {
-    const response = await cloudinary.uploader.destroy(publicId);
-    //    console.log("Deleted image:", response.result);
+    const response = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+    });
+    console.log("Deleted image:", response.result);
     return response;
   } catch (error) {
     console.log("Error deleting image:", error);
     return null;
   }
 };
+const deleteFromCloudinary_Video = async (publicId) => {
+  try {
+    const response = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "video",
+    });
+    console.log("Deleted video:", response.result);
+    return response;
+  } catch (error) {
+    console.log("Error deleting video:", error);
+    return null;
+  }
+};
 
-export { uploadOnCloudinary, optimizeUrl, autoCropUrl, deleteFromCloudinary };
+export {
+  uploadOnCloudinary,
+  optimizeUrl,
+  autoCropUrl,
+  deleteFromCloudinary,
+  deleteFromCloudinary_Video,
+};

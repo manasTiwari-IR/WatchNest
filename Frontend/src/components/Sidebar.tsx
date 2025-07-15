@@ -1,4 +1,6 @@
 import React from 'react'
+import "../cssfiles/DashboardStyles.css";
+import ChannelCard from './ChannelCard.tsx';
 import Footer from '../components/Footer.tsx'
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
@@ -32,25 +34,13 @@ const Sidebar: React.FC = () => {
                     <span className="sidebar-text">Subscriptions</span>
                     {isSubscriptionOpen ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-up-icon lucide-chevron-up"><path d="m18 15-6-6-6 6" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6" /></svg>}
                 </button>
-                <div className="Subscription-dropdown-menu"
-                    hidden={!isSubscriptionOpen}
-                >
-                    <Link className="Subscription-dropdown-item" to="/channel1-profile">
-                        <img
-                            src="https://avatar.iran.liara.run/username?username=Lara+James&length=2"
-                            // src={channel-name || "../src/assets/user-avatar.png"}
-                            // https://avatar.iran.liara.run/username?username=[firstname+lastname]&length=[1-2]
-                            // if Last name is not there, length will be 1
-                            alt="Channel Avatar"
-                            className="avatar"
-                            style={{
-                                width: "30px",
-                                height: "30px",
-                                borderRadius: "50%",
-                            }}
-                            tabIndex={-1} />
-                        <span className="sidebar-text">Channel 1</span>
-                    </Link>
+                <div
+                    className={`Subscription-dropdown-menu transition-all duration-200 ease-in-out overflow-hidden ${isSubscriptionOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className={`transform transition-transform duration-200 ${isSubscriptionOpen ? 'translate-y-0' : '-translate-y-4'}`}>
+                        <ChannelCard channelName="Star Gaming" imageURL="" />
+                        <ChannelCard channelName="MovieFilx" imageURL="" />
+                        <ChannelCard channelName="Widlife Channel" imageURL="" />
+                    </div>
                 </div>
             </div>
 

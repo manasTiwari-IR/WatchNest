@@ -5,13 +5,97 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { deleteFromCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteFromCloudinary,
+  deleteFromCloudinary_Video,
+} from "../utils/cloudinary.js";
 
-// TODO: encrypt video file and thumbnail URL and key before saving to database and decrypt when fetching
+// FUTURE IMPROVEMENT: encrypt video file and thumbnail URL and key before saving to database and decrypt when fetching
+// const getAllUserVideos = asyncHandler(async (req, res) => {
+//   // Get query parameters
+//   // /videos?page=1&limit=10&sortBy=title&sortType=asc&userId=userId
+//   let { page = 1, limit = 10, sortBy, sortType, userId } = req.query;
+//   //TODO: get all videos based on query, sort, pagination
+
+//   if (page < 1 || limit < 1) {
+//     throw new ApiError(400, "Invalid page or limit value");
+//   }
+//   if (sortBy && !["title", "views", "createdAt"].includes(sortBy)) {
+//     throw new ApiError(400, "Invalid sortBy value");
+//   }
+//   if (sortType && !["asc", "desc"].includes(sortType)) {
+//     throw new ApiError(400, "Invalid sortType value");
+//   }
+//   if (userId && !isValidObjectId(userId)) {
+//     throw new ApiError(400, "Invalid userId value");
+//   } else {
+//     userId =
+//       userId instanceof mongoose.Types.ObjectId
+//         ? userId
+//         : new mongoose.Types.ObjectId(userId);
+
+//     const checkuser = await User.findById(userId);
+//     if (!checkuser) {
+//       throw new ApiError(404, "User not found");
+//     }
+//   }
+
+//   try {
+//     const skip = (page - 1) * limit;
+//     const videos = await Video.aggregate([
+//       {
+//         $match: {
+//           ...(userId && { owner: userId }),
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "owner",
+//           foreignField: "_id",
+//           as: "owner",
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           title: 1,
+//           description: 1,
+//           videoFile: 1,
+//           thumbnail: 1,
+//           views: 1,
+//           isPublished: 1,
+//           owner: {
+//             _id: 1,
+//             username: 1,
+//           },
+//         },
+//       },
+//       {
+//         $sort: {
+//           ...(sortBy && { [sortBy]: sortType === "asc" ? 1 : -1 }),
+//         },
+//       },
+//       {
+//         $skip: skip,
+//       },
+//       {
+//         $limit: parseInt(limit),
+//       },
+//     ]);
+
+//     return res.json(
+//       new ApiResponse(200, videos, "Fetched videos successfully")
+//     );
+//   } catch (error) {
+//     console.error("Error in getAllVideos: ", error);
+//     throw new ApiError(500, "An error occurred while fetching videos");
+//   }
+// });
 const getAllVideos = asyncHandler(async (req, res) => {
   // Get query parameters
-  // /videos?page=1&limit=10&query=keyword&sortBy=title&sortType=asc&userId=userId
-  let { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  // http://localhost:8001/api/v1/videos?page=1&limit=10&sortBy=title&sortType=asc
+  let { page = 1, limit = 10, sortBy, sortType } = req.query;
   //TODO: get all videos based on query, sort, pagination
 
   if (page < 1 || limit < 1) {
@@ -23,62 +107,95 @@ const getAllVideos = asyncHandler(async (req, res) => {
   if (sortType && !["asc", "desc"].includes(sortType)) {
     throw new ApiError(400, "Invalid sortType value");
   }
-  if (userId && !isValidObjectId(userId)) {
-    throw new ApiError(400, "Invalid userId value");
-  } else {
-    userId =
-      userId instanceof mongoose.Types.ObjectId
-        ? userId
-        : new mongoose.Types.ObjectId(userId);
-    const checkuser = await User.findById(userId);
-    if (!checkuser) {
-      throw new ApiError(404, "User not found");
-    }
-  }
-  if (query && typeof query !== "string") {
-    throw new ApiError(400, "Invalid query value");
-  }
+  // if (userId && !isValidObjectId(userId)) {
+  //   throw new ApiError(400, "Invalid userId value");
+  // } else {
+  //   userId =
+  //     userId instanceof mongoose.Types.ObjectId
+  //       ? userId
+  //       : new mongoose.Types.ObjectId(userId);
+
+  //   const checkuser = await User.findById(userId);
+  //   if (!checkuser) {
+  //     throw new ApiError(404, "User not found");
+  //   }
+  // }
+
+  // if (query && typeof query !== "string") {
+  //   throw new ApiError(400, "Invalid query value");
+  // }
   try {
     const skip = (page - 1) * limit;
     const videos = await Video.aggregate([
-      {
-        $match: {
-          ...(userId && { owner: userId }),
-        },
-      },
       {
         $lookup: {
           from: "users",
           localField: "owner",
           foreignField: "_id",
-          as: "owner",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                fullname: 1,
+                avatar: 1,
+              },
+            },
+          ],
+          as: "channel",
         },
       },
       {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          videoFile: 1,
-          thumbnail: 1,
-          views: 1,
-          isPublished: 1,
-          owner: {
-            _id: 1,
-            username: 1,
+        $unwind: {
+          path: "$channel",
+          preserveNullAndEmptyArrays: true, // Keep videos even if no matching channel
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalVideos: { $sum: 1 },
+          videos: {
+            $push: {
+              _id: "$_id",
+              title: "$title",
+              duration: "$duration",
+              thumbnail: "$thumbnail",
+              createdAt: "$createdAt",
+              views: "$views",
+              channel: "$channel", // Channel with specified fields
+            },
           },
         },
       },
       {
-        $sort: {
-          ...(sortBy && { [sortBy]: sortType === "asc" ? 1 : -1 }),
+        $set: {
+          videos: {
+            $sortArray: {
+              input: "$videos",
+              sortBy: {
+                [sortBy || "createdAt"]: sortType === "desc" ? -1 : 1, // -1 for descending, 1 for ascending
+              },
+            },
+          },
         },
       },
       {
-        $skip: skip,
+        $set: {
+          videos: {
+            $slice: [
+              "$videos",
+              skip, // Number of videos to skip (e.g., 10)
+              parseInt(limit), // Number of videos to return (e.g., 5)
+            ],
+          },
+        },
       },
       {
-        $limit: parseInt(limit),
+        $project: {
+          videos: 1,
+          //  totalVideos: 1, // Include totalVideos for reference
+          _id: 0,
+        },
       },
     ]);
 
@@ -92,12 +209,23 @@ const getAllVideos = asyncHandler(async (req, res) => {
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
+  console.log("publishAVideo called");
   const { title, description } = req.body;
+  // title = title?.trim();
+  // description = description?.trim();
+  console.log("Title:", title, "Description:", description);
+  console.log("Files:", req.files);
   // TODO: get video, upload to cloudinary, create video
   const videoFile = req.files?.videoFile[0]?.path;
   const thumbnail = req.files?.thumbnail[0]?.path;
+
   if (!videoFile || !thumbnail) {
     throw new ApiError(400, "Video file and thumbnail are required");
+  }
+
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(401, "Unauthorized");
   }
 
   const videoFileUrl = await uploadOnCloudinary(videoFile, "video");
@@ -107,10 +235,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(500, "An error occurred while uploading video");
   }
 
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
   // console.log(videoFileUrl?.duration);
   //get duration
   const newVideo = new Video({
@@ -120,11 +244,12 @@ const publishAVideo = asyncHandler(async (req, res) => {
     thumbnail: thumbnailUrl?.secure_url,
     keys: [videoFileUrl?.public_id, thumbnailUrl?.public_id] || [],
     owner: user._id,
-    isPublished: false,
+    isPublished: true,
     duration: videoFileUrl?.duration || 0,
     views: 0,
   });
   console.log(newVideo);
+
   try {
     const savedVideo = await newVideo.save();
     if (!savedVideo) {
@@ -143,7 +268,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if (thumbnailUrl) {
       await deleteFromCloudinary(thumbnailUrl.public_id);
     }
-
     throw new ApiError(500, "An error occurred while publishing video");
   }
 });
@@ -283,18 +407,29 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if (!video) {
       throw new ApiError(404, "Video not found");
     }
-    // Check if the user is authorized to delete the video
-    if (video.owner.toString() !== req.user._id.toString()) {
-      throw new ApiError(403, "You are not authorized to delete this video");
-    }
     const user = req.user;
     if (!user) {
       throw new ApiError(401, "Unauthorized");
     }
+    // Check if the user is authorized to delete the video
+    if (video.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, "You are not authorized to delete this video");
+    }
     // delete video from cloudinary
-    const deleteVideo = await deleteFromCloudinary(video?.keys[0]);
+    console.log("Deleting video from cloudinary");
+    console.log("Video keys:", video?.keys);
+    const deleteVideo = await deleteFromCloudinary_Video(video?.keys[0]);
     const deletethumbnail = await deleteFromCloudinary(video?.keys[1]);
-    if (!deleteVideo || !deletethumbnail) {
+
+    console.log("Delete Video Response:", deleteVideo);
+    console.log("Delete Thumbnail Response:", deletethumbnail);
+
+    if (
+      !deleteVideo ||
+      !deletethumbnail ||
+      deleteVideo?.result !== "ok" ||
+      deletethumbnail?.result !== "ok"
+    ) {
       throw new ApiError(500, "An error occurred while deleting video");
     } else {
       console.log("Video deleted successfully from cloudinary");
@@ -339,6 +474,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
 export {
   getAllVideos,
+  //  getAllUserVideos,
   publishAVideo,
   getVideoById,
   updateVideo,

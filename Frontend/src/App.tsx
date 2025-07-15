@@ -13,6 +13,8 @@ import store from './ReduxStateManagement/store.ts';
 import YourVideos from './components/YourVideos.tsx';
 import History from './components/History.tsx';
 import Playlists from './components/Playlists.tsx';
+import Profile from './components/Profile.tsx';
+import VideoStream from './pages/VideoStream.tsx';
 
 function App() {
   return (
@@ -24,12 +26,14 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/upload" element={<UploadPage />} />
+            <Route path="/video/:channelname/:videoid" element={<VideoStream />} />
 
             <Route path="/dashboard" element={<Dashboard />} >
               <Route index element={<VideoFeed />} />
               <Route path="your-videos" element={<YourVideos />} />
               <Route path="history" element={<History />} />
               <Route path="playlists" element={<Playlists />} />
+              <Route path="profile/:username/:userid" element={<Profile />} />
             </Route>
 
             <Route path="/error-page" element={<ErrorPage />} />

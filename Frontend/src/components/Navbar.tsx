@@ -1,13 +1,68 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import Footer from "./Footer";
+import { useSelector } from "react-redux";
+import useCustomHooks from "../functions/CustomHook";
+import { useNavigate } from "react-router-dom";
+import ChannelCard from "./ChannelCard.tsx";
 
 const Navbar: React.FC = () => {
-  const userAvatar: string | undefined = "https://avatar.iran.liara.run/username?username=John+Doe&length=2";
+  const navigate = useNavigate();
+  const [userData, setuserData] = useState<any>({});
+  const data: string = useSelector((state: any) => state.userData.data);
+  const key: string = useSelector((state: any) => state.userData.key);
+  const { decryptData } = useCustomHooks();   //decryptData function from custom hook
+
+  useEffect(() => {
+    //console.log("useEffect called in Navbar");
+    // setTimeout(() => {
+    //   console.log("Decrypting data in Navbar");
+    if (data && key) {
+      decryptData(data, key)
+        .then((res: any) => {
+          setuserData(res);
+        })
+        .catch((error: any) => {
+          console.error("Error decrypting data: ", error);
+        });
+    }
+    // }, 3000);
+  }, [data, key]);
+
+  // console.log("userData: ", userData);
+  // console.log("userData avatar: ", userData.avatar);
+
+  const splitName: string[] = userData?.fullname?.split(" ");
+  // console.log("splitName: ", splitName);
+  const userAvatarUrl: string | undefined = (splitName && splitName.length > 0)
+    ? (splitName && splitName.length > 1)
+      ? `${splitName[0][0]}${splitName[1][0]}`
+      : `${splitName[0][0]}`
+    : undefined;
+  // console.log("URL : ", userAvatarUrl);
+
   const [isSubscriptionOpen, setSubscriptionOpen] = React.useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = React.useState(false);
 
+  const handleLogOut = async () => {
+    // TODO - Add logout functionality
+    console.log("Logout clicked");
+    try {
+      await fetch("http://localhost:8001/api/v1/users/logout", {
+        method: "POST",
+        credentials: "include", // Include cookies in the request
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Logged out successfully");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Error logging out: ", error);
+    }
+  };
   return (
     <>
       <nav className="navbar">
@@ -53,30 +108,60 @@ const Navbar: React.FC = () => {
             </svg>
             <span className="upload-text">Upload</span>
           </Link>
-          <div className="avatar-dropdown">
-            <img
-              src={userAvatar || "../src/assets/user-avatar.png"}
+          <button className="avatar-dropdown" onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
+            style={{ outlineOffset: isAvatarDropdownOpen ? "0" : "" }} >
+            {/* <img
+              src={userAvatarUrl}
               // https://avatar.iran.liara.run/username?username=[firstname+lastname]&length=[1-2]
               // if Last name is not there, length will be 1
-              alt="User Avatar"
+              alt=""
               className="avatar"
               tabIndex={-1}
-            />
-            <div className="dropdown-menu">
-              <div className="user-info">
-                <strong>John Doe</strong>
-                <div className="email">john@example.com</div>
-              </div>
-              <hr />
-              <button className="dropdown-item">Profile</button>
-              <button className="dropdown-item">Logout</button>
+            /> */}
+            {
+              userData?.avatar?.length > 0 ?
+                <img
+                  src={userData?.avatar[0]}
+                  style={{ appearance: "none" }}
+                  alt=""
+                  className="avatar"
+                  tabIndex={-1}
+                />
+                :
+                userAvatarUrl ?
+
+                  <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-blue-200 rounded-full" >
+                    <span className="font-bold text-[16px] text-gray-600 ">
+                      {userAvatarUrl}</span>
+                  </div>
+                  : <img
+                    src="../src/assets/user-avatar.png"
+                    style={{ appearance: "none" }}
+                    alt=""
+                    className="avatar"
+                    tabIndex={-1}
+                  />
+            }
+          </button>
+          <div
+            className={`dropdown-menu transition-all duration-200 ease-in-out ${isAvatarDropdownOpen
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-[-10px] pointer-events-none"
+              }`}
+          >
+            <div className="user-info">
+              <strong>{userData.fullname}</strong>
+              <div className="email-userinfo">{userData.email}</div>
             </div>
+            <hr />
+            <button className="dropdown-item" onClick={() => navigate("/dashboard/profile/" + userData?.username + "/" + userData?._id)}>Profile</button>
+            <button className="dropdown-item" onClick={() => handleLogOut()}>Logout</button>
           </div>
-        </div>
-      </nav>
+        </div >
+      </nav >
 
       {/* Drawer for mobile */}
-      <div className="drawer" style={{ display: isDrawerOpen ? "block" : "none" }} tabIndex={-1} onClick={() => setIsDrawerOpen(false)}>
+      < div className="drawer" style={{ display: isDrawerOpen ? "block" : "none" }} tabIndex={- 1} onClick={() => setIsDrawerOpen(false)}>
         <div className="drawer-content" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
           <button className="close-drawer" aria-label="Close menu"
             onClick={() => setIsDrawerOpen(false)}
@@ -107,25 +192,13 @@ const Navbar: React.FC = () => {
                 <span className="sidebar-text">Subscriptions</span>
                 {isSubscriptionOpen ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-up-icon lucide-chevron-up"><path d="m18 15-6-6-6 6" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6" /></svg>}
               </button>
-              <div className="Subscription-dropdown-menu"
-                hidden={!isSubscriptionOpen}
-              >
-                <Link className="Subscription-dropdown-item" to="/channel1-profile">
-                  <img
-                    src="https://avatar.iran.liara.run/username?username=Lara+James&length=2"
-                    // src={channel-name || "../src/assets/user-avatar.png"}
-                    // https://avatar.iran.liara.run/username?username=[firstname+lastname]&length=[1-2]
-                    // if Last name is not there, length will be 1
-                    alt="Channel Avatar"
-                    className="avatar"
-                    style={{
-                      width: "30px",
-                      height: "30px",
-                      borderRadius: "50%",
-                    }}
-                    tabIndex={-1} />
-                  <span className="sidebar-text">Channel 1</span>
-                </Link>
+              <div
+                className={`Subscription-dropdown-menu transition-all duration-200 ease-in-out overflow-hidden ${isSubscriptionOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`transform transition-transform duration-200 ${isSubscriptionOpen ? 'translate-y-0' : '-translate-y-4'}`}>
+                  <ChannelCard channelName="Star Gaming" imageURL="" />
+                  <ChannelCard channelName="MovieFilx" imageURL="" />
+                  <ChannelCard channelName="Widlife Channel" imageURL="" />
+                </div>
               </div>
             </div>
 

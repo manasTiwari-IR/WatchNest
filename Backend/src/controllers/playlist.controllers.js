@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
 
 const createPlaylist = asyncHandler(async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, isPublic } = req.body;
   //TODO: create playlist
   if (!name || !description) {
     throw new ApiError(400, "Name and description are required");
@@ -20,6 +20,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
       name,
       description,
       owner: user._id,
+      isPublic: isPublic || false, // Default to false if not provided
     });
     console.log("Playlist created", playlist);
     return res.json(new ApiResponse(201, playlist, "Playlist created"));
@@ -39,32 +40,59 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(401, "Unauthorized");
   }
+  // some another user is trying to get another user's playlist
+  // show only public playlists
   if (user._id.toString() !== userId) {
-    throw new ApiError(403, "Forbidden");
-  }
-
-  try {
-    const playlists = await Playlist.aggregate([
-      {
-        $match: {
-          owner: mongoose.Types.ObjectId(userId),
+    try {
+      const playlists = await Playlist.aggregate([
+        {
+          $match: {
+            owner: new mongoose.Types.ObjectId(userId),
+            isPublic: true, // Only public playlists
+          },
         },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          description: 1,
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            description: 1,
+          },
         },
-      },
-    ]);
-    if (!playlists) {
-      throw new ApiError(404, "No playlists found");
+      ]);
+      if (playlists.length == 0) {
+        throw new ApiError(404, "No playlists found");
+      }
+      return res.json(new ApiResponse(200, playlists, "User playlists found"));
+    } catch (error) {
+      console.error("Error getting user playlists", error);
+      throw new ApiError(500, error.message || "Error getting user playlists");
     }
-    return res.json(new ApiResponse(200, playlists, "User playlists found"));
-  } catch (error) {
-    console.error("Error getting user playlists", error);
-    throw new ApiError(500, "Error getting user playlists");
+  } else {
+    try {
+      const playlists = await Playlist.aggregate([
+        {
+          $match: {
+            owner: new mongoose.Types.ObjectId(userId),
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            description: 1,
+            isPublic: 1, // Include isPublic field
+          },
+        },
+      ]);
+
+      if (playlists.length == 0) {
+        throw new ApiError(404, "No playlists found");
+      }
+      return res.json(new ApiResponse(200, playlists, "User playlists found"));
+    } catch (error) {
+      console.error("Error getting user playlists", error);
+      throw new ApiError(500, error.message || "Error getting user playlists");
+    }
   }
 });
 
@@ -82,6 +110,12 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     const playlist = await Playlist.findById(playlistId);
     if (!playlist) {
       throw new ApiError(404, "Playlist not found");
+    }
+    if (
+      playlist.isPublic === false &&
+      playlist.owner.toString() !== user._id.toString()
+    ) {
+      throw new ApiError(403, "Forbidden: Playlist is private");
     }
     const data = await Playlist.aggregate([
       {
@@ -114,7 +148,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     return res.json(new ApiResponse(200, data[0], "Playlist found"));
   } catch (error) {
     console.error("Error getting playlist by ID", error);
-    throw new ApiError(500, "Error getting playlist by ID");
+    throw new ApiError(500, error.message || "Error getting playlist by ID");
   }
 });
 
@@ -208,7 +242,7 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     if (playlist.owner.toString() !== req.user._id.toString()) {
       throw new ApiError(403, "Forbidden");
     }
-    await Playlist.findByIdAndDelete(playlistId)
+    await Playlist.findByIdAndDelete(playlistId);
     return res.json(
       new ApiResponse(200, null, { message: "Playlist deleted", success: true })
     );

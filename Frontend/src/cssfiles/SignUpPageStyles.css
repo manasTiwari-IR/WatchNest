@@ -99,6 +99,18 @@
 }
 
 
+.signup-password {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .5rem;
+    background-color: #f1f5f9;
+    border-radius: 6px;
+    border: 1.5px solid #a5b4fc;
+}
+
+
 /* Responsive styles */
 @media (max-width: 900px) {
     .signup-form {

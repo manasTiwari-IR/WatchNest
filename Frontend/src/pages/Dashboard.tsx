@@ -1,31 +1,31 @@
-import "../cssfiles/DashboardStyles.css"
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import CryptoJS from "crypto-js";
+import { useDispatch, useSelector } from "react-redux";
 import { useToaster, Message } from "rsuite";
+// import CryptoJS from "crypto-js";
+
 import 'rsuite/dist/rsuite.min.css';
-import React, { useEffect } from "react";
-// import Footer from "../components/Footer.tsx";
+import "../cssfiles/DashboardStyles.css"
 import Navbar from "../components/Navbar.tsx";
 import Sidebar from "../components/Sidebar.tsx";
-import { useDispatch, useSelector } from "react-redux";
-import { setUserData } from "../ReduxStateManagement/varSlice.ts";
+import useCustomHooks from "../functions/CustomHook.ts";
+// import Footer from "../components/Footer.tsx";
+// import { setUserData } from "../ReduxStateManagement/varSlice.ts";
 
 const Dashboard: React.FC = () => {
-    const dispatch = useDispatch();
-    const toaster = useToaster();
-    const navigate = useNavigate();
-    // get value of refreshTokenVerified from sessionStorage
-    const verifyRefreshTokenResponse: string | null = sessionStorage.getItem("refreshTokenVerified");
+    // const dispatch = useDispatch();
+    //   const toaster = useToaster();
+    //  const navigate = useNavigate();
+    const { verifyRefreshToken } = useCustomHooks();
+    const verifyRefreshTokenResponse: boolean = useSelector((state: any) => state.verifyRefreshToken.val);
     console.log("verifyRefreshTokenResponse: ", verifyRefreshTokenResponse);
-    const verifyRefreshToken = async () => {
-        if (!verifyRefreshTokenResponse) {
-            // If refreshTokenVerified is not set, redirect to login page 
-            navigate("/login");
-        }
-    };
 
     useEffect(() => {
-        verifyRefreshToken();
+      //  console.log("useEffect called in Dashboard");
+        if (!verifyRefreshTokenResponse) {
+            console.log("Calling VerifyRefreshToken function");
+            verifyRefreshToken("/login");
+        }
     }, []);
 
     return (

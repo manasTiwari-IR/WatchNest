@@ -9,6 +9,7 @@ import 'rsuite/dist/rsuite.min.css';
 import CryptoJS from "crypto-js";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../ReduxStateManagement/varSlice.ts";
+import { setVerifyRefreshToken } from "../ReduxStateManagement/responseSlice.ts";
 
 type SignUpFormInputs = {
     fullname: string;
@@ -29,7 +30,8 @@ const schema = yup.object().shape({
     password: yup
         .string()
         .required("Password is required")
-        .min(6, "Password must be at least 6 characters"),
+        .min(6, "Password must be at least 6 characters")
+        .max(24, "Password must be at most 24 characters"),
     confirmPassword: yup
         .string()
         .oneOf([yup.ref("password")], "Passwords must match")
@@ -96,7 +98,7 @@ const SignUpPage: React.FC = () => {
                     </Message>),
                     { placement: 'topEnd', duration: 1500 }
                 );
-                sessionStorage.setItem("refreshTokenVerified", "true");
+                dispatch(setVerifyRefreshToken({ val: true }));
                 navigate(redirectTo || "/dashboard", { replace: true });
             }
         } catch (error) {
@@ -146,6 +148,7 @@ const SignUpPage: React.FC = () => {
                 try {
                     await storeReduxData(JSON.stringify(responseData.data.loggedInUser), responseData.data.key);
                     console.log("Data stored in Redux successfully");
+                    dispatch(setVerifyRefreshToken({ val: true }));
                     toaster.push(
                         (<Message showIcon closable type="success" header="Login Successful"
                             style={{ backgroundColor: "#d1e7dd", color: "#0f5132", borderColor: "#b6e0f3" }}>
@@ -279,6 +282,7 @@ const SignUpPage: React.FC = () => {
                                 {...register("email")}
                                 className={errors.email ? "input-error signup-input" : "signup-input"}
                                 placeholder="Enter your email"
+                                maxLength={50}
                             />
                             {errors.email && <span className="error">{errors.email.message}</span>}
                         </div>
@@ -296,43 +300,45 @@ const SignUpPage: React.FC = () => {
                         >
                             Password*
                         </label>
-                        <input
-                            className={errors.password ? "input2-error" : "input2"}
-                            id="password"
-                            type={showPassword1 ? "text" : "password"}
-                            {...register("password")}
-                            placeholder="Enter your password"
-                            style={{
-                                paddingRight: "2.5rem",
-                                fontSize: ".98rem",
-                                width: "100%",
-                            }}
-                        />
-                        <button
-                            type="button"
-                            className="eye-icon-login-password"
-                            aria-label={showPassword1 ? "Hide password" : "Show password"}
-                            onClick={() => setShowPassword1((prev) => !prev)}
-                            style={{
-                                position: "absolute",
-                                right: "0.75rem",
-                                top: "2.45rem",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 0,
-                                outline: "none",
-                            }}
-                            tabIndex={-1}
-                        >
-                            {showPassword1 ? (
-                                // Eye open SVG
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
-                            ) : (
-                                // Eye closed SVG
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off-icon lucide-eye-off"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></svg>
-                            )}
-                        </button>
+                        <div className="signup-password">
+                            <input
+                                className={errors.password ? "input2-error" : "input2"}
+                                id="password"
+                                type={showPassword1 ? "text" : "password"}
+                                {...register("password")}
+                                placeholder="Enter your password"
+                                minLength={6}
+                                maxLength={24}
+                                style={{
+                                    fontSize: ".98rem",
+                                    width: "100%",
+                                    border: "none",
+                                }}
+                            />
+                            <button
+                                type="button"
+                                className="eye-icon-login-password"
+                                aria-label={showPassword1 ? "Hide password" : "Show password"}
+                                onClick={() => setShowPassword1((prev) => !prev)}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    paddingRight: "0.65rem",
+                                    outline: "none",
+                                }}
+                                tabIndex={-1}
+                            >
+                                {showPassword1 ? (
+                                    // Eye open SVG
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
+                                ) : (
+                                    // Eye closed SVG
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off-icon lucide-eye-off"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></svg>
+                                )}
+                            </button>
+                        </div>
                         {errors.password && (
                             <p style={errorStyles}>{errors.password.message}</p>
                         )}
@@ -349,43 +355,44 @@ const SignUpPage: React.FC = () => {
                         >
                             Confirm Password*
                         </label>
-                        <input
-                            className={errors.confirmPassword ? "input2-error" : "input2"}
-                            id="confirmPassword"
-                            type={showPassword2 ? "text" : "password"}
-                            {...register("confirmPassword")}
-                            placeholder="Enter your password"
-                            style={{
-                                paddingRight: "2.5rem",
-                                fontSize: ".98rem",
-                                width: "100%",
-                            }}
-                        />
-                        <button
-                            type="button"
-                            className="eye-icon-login-password"
-                            aria-label={showPassword2 ? "Hide password" : "Show password"}
-                            onClick={() => setShowPassword2((prev) => !prev)}
-                            style={{
-                                position: "absolute",
-                                right: "0.75rem",
-                                top: "2.45rem",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 0,
-                                outline: "none",
-                            }}
-                            tabIndex={-1}
-                        >
-                            {showPassword2 ? (
-                                // Eye open SVG
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
-                            ) : (
-                                // Eye closed SVG
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off-icon lucide-eye-off"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></svg>
-                            )}
-                        </button>
+                        <div className="signup-password">
+                            <input
+                                className={errors.confirmPassword ? "input2-error" : "input2"}
+                                id="confirmPassword"
+                                type={showPassword2 ? "text" : "password"}
+                                {...register("confirmPassword")}
+                                placeholder="Enter your password"
+                                minLength={6}
+                                maxLength={24}
+                                style={{
+                                    border: "none",
+                                    fontSize: ".98rem",
+                                    width: "100%",
+                                }}
+                            />
+                            <button
+                                type="button"
+                                className="eye-icon-login-password"
+                                aria-label={showPassword2 ? "Hide password" : "Show password"}
+                                onClick={() => setShowPassword2((prev) => !prev)}
+                                style={{
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    paddingRight: "0.65rem",
+                                    outline: "none",
+                                }}
+                                tabIndex={-1}
+                            >
+                                {showPassword2 ? (
+                                    // Eye open SVG
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
+                                ) : (
+                                    // Eye closed SVG
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off-icon lucide-eye-off"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></svg>
+                                )}
+                            </button>
+                        </div>
                         {errors.confirmPassword && (
                             <p style={errorStyles}>{errors.confirmPassword.message}</p>
                         )}
@@ -417,8 +424,8 @@ const SignUpPage: React.FC = () => {
                             Login
                         </Link>
                     </p>
-                </form>
-            </div>
+                </form >
+            </div >
         </>
     );
 };

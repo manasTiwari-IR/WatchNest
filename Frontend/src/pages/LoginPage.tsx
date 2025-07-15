@@ -8,14 +8,21 @@ import * as yup from "yup";
 import { useToaster, Message } from "rsuite";
 import 'rsuite/dist/rsuite.min.css';
 import CryptoJS from "crypto-js";
-import { useDispatch , useSelector} from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../ReduxStateManagement/varSlice.ts";
+import { setVerifyRefreshToken } from "../ReduxStateManagement/responseSlice.ts";
 
 
 // Validation schema
 const schema = yup.object().shape({
-    email: yup.string().email("Invalid email").required("Email is required"),
-    password: yup.string().min(6, "Min 6 characters").required("Password is required"),
+    email: yup.string()
+        .email("Invalid email")
+        .required("Email is required")
+        .max(100, "Email must be less than 100 characters"),
+    password: yup.string()
+        .min(6, "Min 6 characters")
+        .required("Password is required")
+        .max(24, "Max 24 characters"),
 });
 
 type LoginFormInputs = {
@@ -91,11 +98,11 @@ const LoginPage: React.FC = () => {
                     </Message>),
                     { placement: 'topEnd', duration: 1500 }
                 );
-                sessionStorage.setItem("refreshTokenVerified", "true");
+                dispatch(setVerifyRefreshToken({ val: true }));
                 navigate(redirectTo || "/dashboard", { replace: true });
             }
         } catch (error) {
-
+            console.error("Error verifying refresh token:", error);
         }
         finally {
             setIsVerifying(false);
@@ -107,16 +114,6 @@ const LoginPage: React.FC = () => {
         // no need of cleanup function here
         // because we are not using any subscriptions or intervals
     }, []);
-
-    // decrypt the data
-    // const decryptData = async (encryptedData: string, key: string) => {
-    //     // Decrypt the data
-    //     const bytes = CryptoJS.AES.decrypt(encryptedData, key);
-    //     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
-    //     // Parse the decrypted data as JSON
-    //     const parsedData = JSON.parse(decryptedData);
-    //     return parsedData;
-    // };
 
     const storeReduxData = async (data: string, key: string) => {
         // Encrypt the data
@@ -151,6 +148,7 @@ const LoginPage: React.FC = () => {
                 try {
                     await storeReduxData(JSON.stringify(responseData.data.loggedInUser), responseData.data.key);
                     console.log("Data stored in Redux successfully");
+                    dispatch(setVerifyRefreshToken({ val: true }));
                     toaster.push(
                         (<Message showIcon closable type="success" header="Login Successful"
                             style={{ backgroundColor: "#d1e7dd", color: "#0f5132", borderColor: "#b6e0f3" }}>
@@ -294,6 +292,8 @@ const LoginPage: React.FC = () => {
                                 type="email"
                                 {...register("email")}
                                 placeholder="Enter your email"
+                                minLength={11}
+                                maxLength={100}
                                 style={{
                                     fontSize: ".98rem",
                                     width: "100%",
@@ -314,43 +314,44 @@ const LoginPage: React.FC = () => {
                             >
                                 Password
                             </label>
-                            <input
-                                className={errors.password ? "input2-error" : "input2"}
-                                id="password"
-                                type={showPassword ? "text" : "password"}
-                                {...register("password")}
-                                placeholder="Enter your password"
-                                style={{
-                                    paddingRight: "2.5rem",
-                                    fontSize: ".98rem",
-                                    width: "100%",
-                                }}
-                            />
-                            <button
-                                type="button"
-                                className="eye-icon-login-password"
-                                aria-label={showPassword ? "Hide password" : "Show password"}
-                                onClick={() => setShowPassword((prev) => !prev)}
-                                style={{
-                                    position: "absolute",
-                                    right: "0.75rem",
-                                    top: "2.45rem",
-                                    background: "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    padding: 0,
-                                    outline: "none",
-                                }}
-                                tabIndex={-1}
-                            >
-                                {showPassword ? (
-                                    // Eye open SVG
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
-                                ) : (
-                                    // Eye closed SVG
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off-icon lucide-eye-off"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></svg>
-                                )}
-                            </button>
+                            <div className="login-password">
+                                <input
+                                    className={errors.password ? "input2-error " : "input2"}
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    {...register("password")}
+                                    placeholder="Enter your password"
+                                    maxLength={24}
+                                    style={{
+                                        fontSize: ".98rem",
+                                        width: "100%",
+                                        border: "none",
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className="eye-icon-login-password"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                        paddingRight: "0.65rem",
+                                        outline: "none",
+                                    }}
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? (
+                                        // Eye open SVG
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
+                                    ) : (
+                                        // Eye closed SVG
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye-off-icon lucide-eye-off"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></svg>
+                                    )}
+                                </button>
+                            </div>
                             {errors.password && (
                                 <p style={errorStyles}>{errors.password.message}</p>
                             )}
