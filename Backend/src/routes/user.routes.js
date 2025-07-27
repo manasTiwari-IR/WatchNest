@@ -4,14 +4,13 @@ import {
   loginUser,
   refreshAccessToken,
   logoutUser,
-  getCurrentUser,
   changeCurrentPassword,
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
-  verifyRefreshToken
+  verifyRefreshToken,
 } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
@@ -37,7 +36,7 @@ router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
 router.route("/refresh-access-token").get(refreshAccessToken);
 router.route("/verify-refresh-token").get(verifyRefreshToken);
-router.route("/c/:username").get(getUserChannelProfile);
+router.route("/c/:id/:username").get(verifyJWT, getUserChannelProfile);
 // get user channel profile by username
 // :username is a dynamic parameter that will be extracted from the URL and passed to the controller
 

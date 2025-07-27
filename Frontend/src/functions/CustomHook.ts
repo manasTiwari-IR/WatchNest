@@ -26,9 +26,10 @@ const useCustomHooks = () => {
     };
 
     const verifyRefreshToken = async (redirect: string) => {
+        const apiURL = import.meta.env.VITE_api_URL;
         console.log("Verifying refresh token...");
         try {
-            const response = await fetch("http://localhost:8001/api/v1/users/verify-refresh-token", {
+            const response = await fetch(`${apiURL}/api/v1/users/verify-refresh-token`, {
                 method: "GET",
                 credentials: "include", // Include cookies in the request
                 headers: {
@@ -53,7 +54,6 @@ const useCustomHooks = () => {
         }
     };
 
-
     // Function to convert ISO date string to YouTube-style format
     const formatYouTubeDate = (isoDate: string): string => {
         try {
@@ -63,11 +63,11 @@ const useCustomHooks = () => {
                 throw new Error("Invalid date");
             }
             // Current date (based on provided context: July 15, 2025, 11:43 PM IST)
-            const now = new Date("2025-07-15T11:43:00+05:30");
+            const now = new Date();
             // Check if the date is within the last 7 days for relative formatting
             const isRecent = isWithinInterval(date, {
                 start: subDays(now, 7),
-                end: sub(now, { days: -1 })
+                end: now
             });
             const isWeekRecent = isWithinInterval(date, {
                 start: subWeeks(now, 5),

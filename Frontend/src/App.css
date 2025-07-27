@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* 
+
 html{
-    overflow-y: hidden;
-} */
+    scroll-behavior: smooth;
+}

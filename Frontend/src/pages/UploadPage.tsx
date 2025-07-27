@@ -7,14 +7,13 @@ import "../cssfiles/UploadStyles.css";
 import Navbar from '../components/Navbar.tsx';
 import useCustomHooks from '../functions/CustomHook.ts';
 import { useSelector } from 'react-redux';
-import { set } from 'react-hook-form';
 
 // Interface for the form data
 interface UploadFormData {
   title: string;
   description: string;
-  videoFile: File | null;
-  thumbnailImage: File | null;
+  videoFile: File | null | undefined;
+  thumbnailImage: File | null | undefined;
 }
 
 // Validation schema
@@ -67,11 +66,12 @@ const UploadPage: React.FC = () => {
   const initialValues: UploadFormData = {
     title: '',
     description: '',
-    videoFile: null,
-    thumbnailImage: null,
+    videoFile: undefined,
+    thumbnailImage: undefined,
   };
 
   // Handle form submission
+  const apiURL = import.meta.env.VITE_api_URL;
   const onSubmit = async (values: UploadFormData, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
     try {
       const formdata = new FormData();
@@ -80,8 +80,11 @@ const UploadPage: React.FC = () => {
       formdata.append('videoFile', values.videoFile as File);
       formdata.append('thumbnail', values.thumbnailImage as File);
 
-      const response = await fetch("http://localhost:8001/api/v1/videos/upload", {
+      const response = await fetch(`${apiURL}/api/v1/videos/upload`, {
         method: "POST",
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
         body: formdata,
         credentials: "include", // Include cookies in the request
       });

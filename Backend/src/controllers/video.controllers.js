@@ -11,92 +11,73 @@ import {
 } from "../utils/cloudinary.js";
 
 // FUTURE IMPROVEMENT: encrypt video file and thumbnail URL and key before saving to database and decrypt when fetching
-// const getAllUserVideos = asyncHandler(async (req, res) => {
-//   // Get query parameters
-//   // /videos?page=1&limit=10&sortBy=title&sortType=asc&userId=userId
-//   let { page = 1, limit = 10, sortBy, sortType, userId } = req.query;
-//   //TODO: get all videos based on query, sort, pagination
 
-//   if (page < 1 || limit < 1) {
-//     throw new ApiError(400, "Invalid page or limit value");
-//   }
-//   if (sortBy && !["title", "views", "createdAt"].includes(sortBy)) {
-//     throw new ApiError(400, "Invalid sortBy value");
-//   }
-//   if (sortType && !["asc", "desc"].includes(sortType)) {
-//     throw new ApiError(400, "Invalid sortType value");
-//   }
-//   if (userId && !isValidObjectId(userId)) {
-//     throw new ApiError(400, "Invalid userId value");
-//   } else {
-//     userId =
-//       userId instanceof mongoose.Types.ObjectId
-//         ? userId
-//         : new mongoose.Types.ObjectId(userId);
+const getAllUserVideos = asyncHandler(async (req, res) => {
+  // Get query parameters
+  // /videos/:username/:userid
+  let { username, userId } = req.params;
 
-//     const checkuser = await User.findById(userId);
-//     if (!checkuser) {
-//       throw new ApiError(404, "User not found");
-//     }
-//   }
+  if (userId && !isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid userId value");
+  } else {
+    userId =
+      userId instanceof mongoose.Types.ObjectId
+        ? userId
+        : new mongoose.Types.ObjectId(userId);
 
-//   try {
-//     const skip = (page - 1) * limit;
-//     const videos = await Video.aggregate([
-//       {
-//         $match: {
-//           ...(userId && { owner: userId }),
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "users",
-//           localField: "owner",
-//           foreignField: "_id",
-//           as: "owner",
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: 1,
-//           title: 1,
-//           description: 1,
-//           videoFile: 1,
-//           thumbnail: 1,
-//           views: 1,
-//           isPublished: 1,
-//           owner: {
-//             _id: 1,
-//             username: 1,
-//           },
-//         },
-//       },
-//       {
-//         $sort: {
-//           ...(sortBy && { [sortBy]: sortType === "asc" ? 1 : -1 }),
-//         },
-//       },
-//       {
-//         $skip: skip,
-//       },
-//       {
-//         $limit: parseInt(limit),
-//       },
-//     ]);
+    const checkuser = await User.findById(userId);
+    if (!checkuser) {
+      throw new ApiError(404, "User not found");
+    }
+  }
 
-//     return res.json(
-//       new ApiResponse(200, videos, "Fetched videos successfully")
-//     );
-//   } catch (error) {
-//     console.error("Error in getAllVideos: ", error);
-//     throw new ApiError(500, "An error occurred while fetching videos");
-//   }
-// });
+  try {
+    const videos = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $lookup: {
+          from: "videos",
+          localField: "_id",
+          foreignField: "owner",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                thumbnail: 1,
+                duration: 1,
+                createdAt: 1,
+                views: 1,
+              },
+            },
+          ],
+          as: "videosdata",
+        },
+      },
+      {
+        $project: {
+          videosdata: 1,
+        },
+      },
+    ]);
+
+    return res.json(
+      new ApiResponse(200, { videos }, "Fetched videos successfully")
+    );
+  } catch (error) {
+    console.error("Error in getAllVideos: ", error);
+    throw new ApiError(500, "An error occurred while fetching videos");
+  }
+});
+
 const getAllVideos = asyncHandler(async (req, res) => {
   // Get query parameters
   // http://localhost:8001/api/v1/videos?page=1&limit=10&sortBy=title&sortType=asc
   let { page = 1, limit = 10, sortBy, sortType } = req.query;
-  //TODO: get all videos based on query, sort, pagination
 
   if (page < 1 || limit < 1) {
     throw new ApiError(400, "Invalid page or limit value");
@@ -132,23 +113,21 @@ const getAllVideos = asyncHandler(async (req, res) => {
           from: "users",
           localField: "owner",
           foreignField: "_id",
-          pipeline: [
-            {
-              $project: {
-                _id: 1,
-                fullname: 1,
-                avatar: 1,
-              },
-            },
-          ],
+          pipeline: [{ $project: { _id: 1, fullname: 1, avatar: 1 } }],
           as: "channel",
         },
       },
       {
-        $unwind: {
-          path: "$channel",
-          preserveNullAndEmptyArrays: true, // Keep videos even if no matching channel
-        },
+        $unwind: { path: "$channel", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $sort: { [sortBy]: sortType === "desc" ? -1 : 1 },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit ? parseInt(limit) : 10,
       },
       {
         $group: {
@@ -160,42 +139,16 @@ const getAllVideos = asyncHandler(async (req, res) => {
               title: "$title",
               duration: "$duration",
               thumbnail: "$thumbnail",
+              keys: "$keys",
               createdAt: "$createdAt",
               views: "$views",
-              channel: "$channel", // Channel with specified fields
+              channel: "$channel",
             },
           },
         },
       },
       {
-        $set: {
-          videos: {
-            $sortArray: {
-              input: "$videos",
-              sortBy: {
-                [sortBy || "createdAt"]: sortType === "desc" ? -1 : 1, // -1 for descending, 1 for ascending
-              },
-            },
-          },
-        },
-      },
-      {
-        $set: {
-          videos: {
-            $slice: [
-              "$videos",
-              skip, // Number of videos to skip (e.g., 10)
-              parseInt(limit), // Number of videos to return (e.g., 5)
-            ],
-          },
-        },
-      },
-      {
-        $project: {
-          videos: 1,
-          //  totalVideos: 1, // Include totalVideos for reference
-          _id: 0,
-        },
+        $project: { videos: 1, totalVideos: 1, _id: 0 },
       },
     ]);
 
@@ -340,23 +293,22 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
-  if (!isValidObjectId(videoId)) {
-    throw new ApiError(400, "Invalid video id");
-  }
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-
-  const video = await Video.findById(videoId);
-  if (!video) {
-    throw new ApiError(404, "Video not found");
-  }
-
   try {
+    if (!isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid video id");
+    }
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+      throw new ApiError(404, "Video not found");
+    }
     const { title, description } = req.body;
-    const thumbnail = req.file?.path;
-    if (thumbnail) {
+    const thumbnail = req.file?.path || undefined;
+    if (thumbnail && (thumbnail !== "" || thumbnail !== null || thumbnail !== undefined)) {
       const thumbnailUrl = await uploadOnCloudinary(thumbnail, "image");
       if (!thumbnailUrl) {
         throw new ApiError(500, "An error occurred while uploading thumbnail");
@@ -392,7 +344,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (thumbnailUrl) {
       await deleteFromCloudinary(thumbnailUrl?.public_id);
     }
-    throw new ApiError(500, "An error occurred while updating video");
+    throw new ApiError(500, "An error occurred while updating video", error);
   }
 });
 
@@ -474,7 +426,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 
 export {
   getAllVideos,
-  //  getAllUserVideos,
+  getAllUserVideos,
   publishAVideo,
   getVideoById,
   updateVideo,

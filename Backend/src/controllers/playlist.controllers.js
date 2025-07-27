@@ -55,7 +55,9 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
           $project: {
             _id: 1,
             name: 1,
-            description: 1,
+            createdAt: 1,
+            videoCount: { $size: "$videos" }, // Count of videos in the playlist
+            isPublic: 1, // Include isPublic field
           },
         },
       ]);
@@ -79,7 +81,8 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
           $project: {
             _id: 1,
             name: 1,
-            description: 1,
+            createdAt: 1,
+            videoCount: { $size: "$videos" }, // Count of videos in the playlist
             isPublic: 1, // Include isPublic field
           },
         },
@@ -99,14 +102,14 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 const getPlaylistById = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
   //TODO: get playlist by id
-  if (!isValidObjectId(playlistId)) {
-    throw new ApiError(400, "Invalid playlist ID");
-  }
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
   try {
+    if (!isValidObjectId(playlistId)) {
+      throw new ApiError(400, "Invalid playlist ID");
+    }
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
     const playlist = await Playlist.findById(playlistId);
     if (!playlist) {
       throw new ApiError(404, "Playlist not found");
@@ -125,10 +128,25 @@ const getPlaylistById = asyncHandler(async (req, res) => {
       },
       {
         $lookup: {
-          from: "users",
-          localField: "owner",
+          from: "videos",
+          localField: "videos",
           foreignField: "_id",
-          as: "owner",
+          as: "videos",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                // videoFile: 0,
+                thumbnail: 1,
+                title: 1,
+                // description: 0,
+                duration: 1,
+                views: 1,
+                owner: 1,
+                createdAt: 1,
+              },
+            },
+          ],
         },
       },
       {
@@ -136,15 +154,12 @@ const getPlaylistById = asyncHandler(async (req, res) => {
           _id: 1,
           name: 1,
           description: 1,
+          videosId: 1,
           videos: 1,
-          owner: {
-            // username of owner
-            username: 1,
-          },
         },
       },
     ]);
-
+    // console.log("Playlist found", data);
     return res.json(new ApiResponse(200, data[0], "Playlist found"));
   } catch (error) {
     console.error("Error getting playlist by ID", error);
@@ -254,16 +269,25 @@ const deletePlaylist = asyncHandler(async (req, res) => {
 
 const updatePlaylist = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
-  const { name, description } = req.body;
+  const { name, description, isPublic = false } = req.body;
   //TODO: update playlist
-  if (!isValidObjectId(playlistId)) {
-    throw new ApiError(400, "Invalid playlist ID");
-  }
-  if (!name || !description) {
-    throw new ApiError(400, "Name and description are required");
-  }
-  if (!req.user) {
-    throw new ApiError(401, "Unauthorized");
+  try {
+    if (!isValidObjectId(playlistId)) {
+      throw new ApiError(400, "Invalid playlist ID");
+    }
+    // BIG BUG : isPublic is boolean, so it can be false and can cause error
+    if (!name || !description) {
+      throw new ApiError(400, "Name, description are required");
+    }
+    if (!req.user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+    if (typeof isPublic !== "boolean") {
+      throw new ApiError(400, "isPublic must be a boolean");
+    }
+  } catch (error) {
+    console.error("Error validating request", error);
+    throw new ApiError(400, "Invalid request data", error);
   }
   try {
     const playlist = await Playlist.findById(playlistId).select("-videos");
@@ -275,6 +299,9 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     }
     playlist.name = name;
     playlist.description = description;
+    if (playlist.isPublic !== isPublic) {
+      playlist.isPublic = isPublic; // Update visibility
+    }
     await playlist.save(); // Save updated playlist
     return res.json(
       new ApiResponse(200, playlist, {
@@ -284,7 +311,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     );
   } catch (error) {
     console.error("Error updating playlist", error);
-    throw new ApiError(500, "Error updating playlist");
+    throw new ApiError(500, "Error updating playlist", error);
   }
 });
 

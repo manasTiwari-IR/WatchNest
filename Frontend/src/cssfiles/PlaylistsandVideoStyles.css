@@ -1,0 +1,418 @@
+.your-playlists-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    /* background-color: #fafafa; */
+    margin: .3rem .5rem;
+    padding: 0 .5rem;
+    gap: .5rem;
+}
+
+.your-playlists-title {
+    font-size: clamp(1.4rem, 1.1925rem + 0.8972vw, 2rem);
+    font-weight: 600;
+    color: #333;
+    font-family: 'Poppins', sans-serif;
+}
+
+.your-playlists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+}
+
+.your-playlist-create-card {
+    background-color: #fafafa;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    position: relative;
+    min-height: 220px;
+    height: 100%;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.playlist-create-card-icon {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #555;
+    transition: all 0.15s ease-in-out;
+}
+
+.your-playlist-create-card:hover .playlist-create-card-icon {
+    transform: translate(0, -5px);
+}
+
+.your-playlist-create-card:hover .playlist-create-card-title {
+    transform: translate(0, -5px);
+}
+
+.your-playlist-create-card:hover {
+    background-color: #f0f0f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.playlist-create-card-title {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #555;
+    transition: all 0.15s ease-in-out;
+}
+
+/* Playlist Delete Modal  */
+.confirm-delete-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: all .2s ease-in-out;
+}
+
+.confirm-modal-content {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.confirm-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal-button-grp {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: .5rem;
+    flex-direction: row;
+    align-items: center;
+}
+
+.confirm-modal-btn {
+    background-color: #db3c30;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.confirm-modal-btn:hover {
+    background-color: #af2b27 !important;
+}
+
+.delete-modal-btn {
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.delete-modal-btn:hover {
+    background-color: #e0e0e0;
+}
+
+/* Playlist Create Modal */
+.playlist-create-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.playlist-create-modal[hidden] {
+    display: none;
+    opacity: 0;
+}
+
+.playlist-create-modal-content {
+    background-color: #fafafa;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease forwards;
+}
+
+.video-edit-modal-content {
+    background-color: #fafafa;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.playlist-create-modal-body {
+    padding: 1.5rem;
+}
+
+.video-edit-modal-body {
+    padding: 1.5rem;
+}
+
+.playlist-create-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.playlist-create-modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.playlist-create-modal-close-button {
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.playlist-create-modal-close-button:hover {
+    background-color: #f3f4f6;
+}
+
+.playlist-create-modal-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-create-modal-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.playlist-create-modal-field-name,
+.playlist-create-modal-field-description {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.input-error {
+    border-color: #ef4444;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.playlist-create-modal-field-isPublic {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.form-checkbox {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #6366f1;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-size: 0.95rem;
+    color: #6366f1;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.playlist-create-modal-save-button {
+    background-color: #6366f1;
+    color: white;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: 100%;
+}
+
+.playlist-create-modal-save-button:hover:not(:disabled) {
+    background-color: #4f46e5;
+}
+
+.playlist-create-modal-save-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.video-edit-modal-field-thumbnail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.videoEdit-thumbnail-form-file-input-container {
+    position: relative;
+    margin-top: 0.5rem;
+}
+
+.videoEdit-thumbnail-form-file-input-label {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #4b5563;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    border: 1px dashed #cbd5e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.videoEdit-thumbnail-form-file-input-label:hover {
+    background: #e5e7eb;
+}
+
+.videoEdit-thumbnail-form-file-input {
+    opacity: 0;
+    width: 33%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: pointer;
+}
+
+.playlist-page-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    padding: 0 1rem;
+}
+
+.playlist-videos-title {
+    font-size: clamp(1.4rem, 1.1925rem + 0.8972vw, 2rem);
+    font-weight: 600;
+    color: #333;
+    font-family: 'Poppins', sans-serif;
+}
+
+.playlist-videos-description {
+    font-size: 0.95rem;
+    color: #555;
+    margin-bottom: 1rem;
+}
+
+.playlist-videos-container {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 1rem;
+}
+
+.video-card-dropdownMenuIconButton,
+.container-video-card-dropdownMenuIconButton {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.video-card-dropdownMenuIconButton {
+    padding: 0.5rem;
+}
+
+.container-video-card-dropdownMenuIconButton {
+    margin-right: .3rem;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.container-video-card-dropdownMenuIconButton:hover {
+    background: #e5e7eb;
+}
+
+@media (max-width: 400px) {
+    .videoEdit-thumbnail-form-file-input {
+        width: 46%;
+    }
+}

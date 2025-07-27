@@ -7,26 +7,34 @@ interface ApiVideoResponse {
     _id: string;
     title: string;
     channel: {
-        id: string;
+        _id: string;
         fullname: string;
         avatar: string[];
     };
     thumbnail: string;
+    keys: string[];
     views: number;
     duration?: number;
     createdAt?: string;
 }
 
 const VideoCard: React.FC<{ video: ApiVideoResponse }> = ({ video }) => {
+    // get image type from the thumbnail URL
+    const imageType = video.thumbnail.split('.').pop();
+    // console.log("Image Type:", imageType);
+    const thumbnail_url = `https://res.cloudinary.com/${import.meta.env.VITE_cloudinary_client_id}/image/upload/q_40/${video.keys[1]}.${imageType}`; // lower quality thumbnail
     const { formatYouTubeDate } = useCustomHooks();
     const time = video.createdAt ? formatYouTubeDate(video.createdAt) : "Unknown";
     return (
         <>
-            <Link className="video-card" to={`/video/${video.channel.fullname}/${video._id}`}>
+            <Link
+                className="video-card"
+                to={`/video/${video.channel._id}/${video._id}`}
+            >
                 <div className="video-thumb-wrapper">
                     <img
-                        src={video?.thumbnail || "../src/assets/default_thumbnail.png"}
-                        alt="Video Thumbnail"
+                        src={thumbnail_url || "../src/assets/default_thumbnail.png"}
+                        alt="../src/assets/default_thumbnail.png"
                         className="video-thumb"
                     />
                     <span
@@ -42,14 +50,13 @@ const VideoCard: React.FC<{ video: ApiVideoResponse }> = ({ video }) => {
                             display: "flex",
                             alignItems: "center",
                             opacity: 0,
-                            transition: "opacity 0.3s ease",
+                            transition: "opacity 0.3s ease, transform 0.3s ease",
                             justifyContent: "center",
                             width: "38px",
                             height: "38px",
                         }}
                     >
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="white">
-                            {/* <circle cx="16" cy="16" r="16" fill="rgba(0,0,0,0.3)" /> */}
                             <polygon points="13,10 24,16 13,22" fill="white" />
                         </svg>
                     </span>
@@ -64,36 +71,37 @@ const VideoCard: React.FC<{ video: ApiVideoResponse }> = ({ video }) => {
                             padding: "2px 4px",
                             borderRadius: "4px",
                             fontSize: "12px",
-                            fontWeight: "500"
+                            fontWeight: "500",
+                            transition: "background 0.3s ease"
                         }}
                     >
-                        {Math.floor(video?.duration ? video?.duration / 60 : 0)}:{Math.floor(video?.duration ? video?.duration % 60 : 0)}
-
+                        {Math.floor(video?.duration ? video?.duration / 60 : 0)}:{Math.floor(video?.duration ? video?.duration % 60 : 0).toString().padStart(2, '0')}
                     </span>
                 </div>
-                <div className="video-info">
+                <div className="video-info" style={{ transition: "transform 0.2s ease" }}>
                     <div className="video-title">
                         <img
                             src={video?.channel?.avatar[0] || "../src/assets/user-avatar.png"}
-                            // https://avatar.iran.liara.run/username?username=[firstname+lastname]&length=[1-2]
-                            // if Last name is not there, length will be 1
                             alt="User Avatar"
                             className="avatar channel-avatar"
+                            style={{ transition: "transform 0.3s ease" }}
                         />
                         <div className="video-details">
-                            <span className="video-title-text" style={{
+                            <span title={video.title} className="video-title-text" style={{
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
-                                display: 'block'
+                                display: 'block',
+                                transition: "color 0.3s ease"
                             }}>
-                                {video.title} </span>
+                                {video.title}
+                            </span>
                             <span className='video-meta video-channel'>{video.channel.fullname}</span>
                             <span className='video-meta video-stats'>{video.views} views • {time}</span>
                         </div>
                     </div>
                 </div>
-            </Link >
+            </Link>
         </>
     )
 }

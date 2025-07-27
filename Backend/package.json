@@ -1,5 +1,5 @@
 {
-  "name": "vidtube-backend",
+  "name": "WatchNest-backend",
   "version": "1.0.0",
   "description": "A project inspired by Youtube",
   "main": "src/index.js",
@@ -18,7 +18,7 @@
     "CORS"
   ],
   "author": "Manas Tiwari",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.5.1",

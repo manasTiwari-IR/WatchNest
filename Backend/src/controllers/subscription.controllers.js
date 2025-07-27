@@ -66,6 +66,10 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Unauthorized");
   }
 
+  if (user._id.toString() !== channelId.toString()) {
+    throw new ApiError(403, "Forbidden");
+  }
+
   try {
     const channel = await User.findById(channelId).select(
       "-password -refreshToken -watchHistory"
@@ -73,18 +77,25 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     if (!channel) {
       throw new ApiError(404, "Channel not found");
     }
-    const subscribers = await Subscription.find({ channel: channel._id })
-      .populate("subscriber", "name email")
-      .select("subscriber");
+    // const subscribers = await Subscription.find({ channel: channel._id })
+    //   .populate("subscriber", "fullname username email avatar")
+    //   .select("subscriber");
 
-    if (!subscribers) {
-      throw new ApiError(404, "No subscribers found");
-    }
+    const SubscribersCount = await Subscription.countDocuments({
+      channel: channel._id,
+    });
+    // if (!subscribers) {
+    //   throw new ApiError(404, "No subscribers found");
+    // }
     return res.json(
-      new ApiResponse(200, subscribers, {
-        message: "Subscribers found",
-        success: true,
-      })
+      new ApiResponse(
+        200,
+        { SubscribersCount },
+        {
+          message: "Subscribers found",
+          success: true,
+        }
+      )
     );
   } catch (error) {
     console.error("Error in getUserChannelSubscribers: ", error);
@@ -115,17 +126,19 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     const subscribedChannels = await Subscription.find({
       subscriber: subscriber._id,
     })
-      .populate("channel", "name email")
+      .populate("channel", "fullname username avatar _id")
       .select("channel");
 
-    if (!subscribedChannels) {
-      throw new ApiError(404, "No subscribed channels found");
-    }
+      // If no channels are subscribed, return an empty array
     return res.json(
-      new ApiResponse(200, subscribedChannels, {
-        message: "Subscribed channels found",
-        success: true,
-      })
+      new ApiResponse(
+        200,
+        { subscribedChannels },
+        {
+          message: "Subscribed channels found",
+          success: true,
+        }
+      )
     );
   } catch (error) {
     console.error("Error in getSubscribedChannels: ", error);

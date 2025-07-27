@@ -1,5 +1,5 @@
 {
-  "name": "vistube-frontend",
+  "name": "WatchNest-frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -45,6 +45,7 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/crypto-js": "^4.2.2",
+    "@types/node": "^24.0.14",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",

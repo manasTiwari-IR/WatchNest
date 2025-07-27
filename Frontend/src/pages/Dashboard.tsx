@@ -3,12 +3,11 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useToaster, Message } from "rsuite";
 // import CryptoJS from "crypto-js";
-
-import 'rsuite/dist/rsuite.min.css';
-import "../cssfiles/DashboardStyles.css"
 import Navbar from "../components/Navbar.tsx";
 import Sidebar from "../components/Sidebar.tsx";
 import useCustomHooks from "../functions/CustomHook.ts";
+
+
 // import Footer from "../components/Footer.tsx";
 // import { setUserData } from "../ReduxStateManagement/varSlice.ts";
 
@@ -21,7 +20,7 @@ const Dashboard: React.FC = () => {
     console.log("verifyRefreshTokenResponse: ", verifyRefreshTokenResponse);
 
     useEffect(() => {
-      //  console.log("useEffect called in Dashboard");
+        //  console.log("useEffect called in Dashboard");
         if (!verifyRefreshTokenResponse) {
             console.log("Calling VerifyRefreshToken function");
             verifyRefreshToken("/login");
@@ -31,7 +30,6 @@ const Dashboard: React.FC = () => {
     return (
         <>
             <div className="dashboard-container">
-                {/* Navbar */}
                 <Navbar />
 
                 {/* Main Content */}

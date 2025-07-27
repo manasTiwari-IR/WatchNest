@@ -1,12 +1,98 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import "../cssfiles/DashboardStyles.css";
 import ChannelCard from './ChannelCard.tsx';
 import Footer from '../components/Footer.tsx'
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { useToaster, Message } from 'rsuite';
+import { useSelector } from 'react-redux';
+import useCustomHooks from "../functions/CustomHook";
 
+interface SubscribedChannelsResponse {
+    _id: string;
+    channel: {
+        _id: string;
+        fullname: string;
+        username: string;
+        avatar: {
+            url: string;
+            public_id: string;
+        }
+    }
+}
 const Sidebar: React.FC = () => {
-    const [isSelected, setSelected] = useState(1);
+    const toaster = useToaster();
+    const { decryptData } = useCustomHooks();   //decryptData function from custom hook
+    const [subscribedChannelData, setSubscribedChannelData] = useState<SubscribedChannelsResponse[] | null>(null);
+    const [userId, setuserId] = useState<string | null>(null);
+    const data: string = useSelector((state: any) => state.userData.data);
+    const key: string = useSelector((state: any) => state.userData.key);
+
+    useEffect(() => {
+        if (data && key) {
+            decryptData(data, key)
+                .then((res: any) => {
+                    setuserId(res._id);
+                })
+                .catch((error: any) => {
+                    console.error("Error decrypting data: ", error);
+                });
+        }
+    }, [data, key]);
+    const api_url = import.meta.env.VITE_api_URL;
+    const getSubscribedChannels = async () => {
+        // console.log("Fetching subscribed channels for user ID:", userId);
+        try {
+            if (subscribedChannelData !== null) return;
+            const response = await fetch(`${api_url}/api/v1/subscriptions/u/${userId}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                //     console.log("response = ",response);
+                throw new Error(response.statusText);
+            }
+            const data = await response.json();
+            setSubscribedChannelData(data.data.subscribedChannels);
+            // console.log("Subscribed channels data:", data);
+
+        } catch (error) {
+            console.error("Error fetching subscribed channels:", error);
+            // Handle error (e.g., show notification)
+            toaster.push(
+                (<Message showIcon closable type="error" header="Internal Server Error"
+                    style={{ backgroundColor: "#f8d7da", color: "#721c24", borderColor: "#f5c6cb" }}>
+                    Error: Unable to fetch subscribed channels. Please try again later.
+                </Message>),
+                { placement: 'topEnd', duration: 1500 }
+            );
+            setSubscribedChannelData(null); // Reset state on error
+            return;
+        }
+    };
+    useEffect(() => {
+        if (userId) {
+            getSubscribedChannels();
+        }
+    }, [userId])
+
+    // console.log("Subscribed Channel Data1:", subscribedChannelData);
+    const [isSelected, setSelected] = useState<number>(1);
+    useEffect(() => {
+        if (window.location.pathname === "/dashboard/playlists") {
+            setSelected(2);
+        }
+        else if (window.location.pathname === "/dashboard/your-videos") {
+            setSelected(3);
+        }
+        else if (window.location.pathname === "/dashboard/history") {
+            setSelected(4);
+        }
+        else {
+            setSelected(1);
+        }
+    }, []);
+    
     const [isSubscriptionOpen, setSubscriptionOpen] = useState(false);
     return (
         <aside className="sidebar">
@@ -29,17 +115,25 @@ const Sidebar: React.FC = () => {
 
             <div className="Subscription-dropdown m-0 p-0 w-full">
                 <button className={`sidebar-btn subs-btn w-full ${isSubscriptionOpen ? "clicked" : ""}`}
-                    onClick={() => setSubscriptionOpen(!isSubscriptionOpen)}
-                >
+                    onClick={() => {
+                        setSubscriptionOpen(!isSubscriptionOpen);
+                        if (subscribedChannelData === null && !isSubscriptionOpen) {
+                            getSubscribedChannels();
+                        }
+                    }} >
                     <span className="sidebar-text">Subscriptions</span>
                     {isSubscriptionOpen ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-up-icon lucide-chevron-up"><path d="m18 15-6-6-6 6" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6" /></svg>}
                 </button>
                 <div
                     className={`Subscription-dropdown-menu transition-all duration-200 ease-in-out overflow-hidden ${isSubscriptionOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className={`transform transition-transform duration-200 ${isSubscriptionOpen ? 'translate-y-0' : '-translate-y-4'}`}>
-                        <ChannelCard channelName="Star Gaming" imageURL="" />
-                        <ChannelCard channelName="MovieFilx" imageURL="" />
-                        <ChannelCard channelName="Widlife Channel" imageURL="" />
+                        {subscribedChannelData && subscribedChannelData.length > 0 ? (
+                            subscribedChannelData.map((channel, index) => (
+                                <ChannelCard key={index} id={channel.channel._id} channelName={channel.channel.fullname} imageURL={channel.channel.avatar.url} />
+                            ))
+                        ) : (
+                            <p className="text-gray-500 p-2 text-center text-[12px]">No subscribed channels found</p>
+                        )}
                     </div>
                 </div>
             </div>
