@@ -1,5 +1,5 @@
 {
-  "name": "WatchNest-backend",
+  "name": "watchnest-backend",
   "version": "1.0.0",
   "description": "A project inspired by Youtube",
   "main": "src/index.js",
