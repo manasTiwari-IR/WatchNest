@@ -23,14 +23,6 @@ interface UserDataProp {
 
 const YourVideos: React.FC = () => {
   const { decryptData } = useCustomHooks();
-  const initialValues: YourVideosProps = {
-    _id: '',
-    title: '',
-    createdAt: '',
-    duration: 0,
-    views: 0,
-    thumbnail: ''
-  };
   const initialUserData: UserDataProp = {
     _id: '',
     fullname: '',
@@ -60,6 +52,7 @@ const YourVideos: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching videos: ", error);
+      throw error;
     }
   }
 
@@ -113,7 +106,9 @@ const YourVideos: React.FC = () => {
             </div>
           }>
             <YourVideoCard key={video._id} id={video._id} title={video.title} createdAt={video.createdAt} views={video.views} duration={video.duration}
-              channelid={userdata._id} thumbnail={video.thumbnail} hidedropdown={false} setVideoData={setVideoData} />
+              channelid={userdata._id} thumbnail={video.thumbnail} hidedropdown={false} 
+              hideVideodeleteFromPlaylist={true} setVideoData={setVideoData} 
+              setPlaylistVideos={() => {}}/>
           </Suspense>
         ))}
       </div>

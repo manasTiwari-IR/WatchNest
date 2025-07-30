@@ -1,6 +1,7 @@
 import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.models.js";
 import { User } from "../models/user.models.js";
+import { Subscription } from "../models/subscription.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -9,26 +10,21 @@ import {
   deleteFromCloudinary,
   deleteFromCloudinary_Video,
 } from "../utils/cloudinary.js";
+import { Like } from "../models/like.models.js";
 
 // FUTURE IMPROVEMENT: encrypt video file and thumbnail URL and key before saving to database and decrypt when fetching
 
 const getAllUserVideos = asyncHandler(async (req, res) => {
   // Get query parameters
   // /videos/:username/:userid
-  let { username, userId } = req.params;
+  const { username, userId } = req.params;
 
   if (userId && !isValidObjectId(userId)) {
     throw new ApiError(400, "Invalid userId value");
-  } else {
-    userId =
-      userId instanceof mongoose.Types.ObjectId
-        ? userId
-        : new mongoose.Types.ObjectId(userId);
-
-    const checkuser = await User.findById(userId);
-    if (!checkuser) {
-      throw new ApiError(404, "User not found");
-    }
+  }
+  const checkuser = await User.findById(userId);
+  if (!checkuser) {
+    throw new ApiError(404, "User not found");
   }
 
   try {
@@ -77,35 +73,19 @@ const getAllUserVideos = asyncHandler(async (req, res) => {
 const getAllVideos = asyncHandler(async (req, res) => {
   // Get query parameters
   // http://localhost:8001/api/v1/videos?page=1&limit=10&sortBy=title&sortType=asc
-  let { page = 1, limit = 10, sortBy, sortType } = req.query;
-
-  if (page < 1 || limit < 1) {
-    throw new ApiError(400, "Invalid page or limit value");
-  }
-  if (sortBy && !["title", "views", "createdAt"].includes(sortBy)) {
-    throw new ApiError(400, "Invalid sortBy value");
-  }
-  if (sortType && !["asc", "desc"].includes(sortType)) {
-    throw new ApiError(400, "Invalid sortType value");
-  }
-  // if (userId && !isValidObjectId(userId)) {
-  //   throw new ApiError(400, "Invalid userId value");
-  // } else {
-  //   userId =
-  //     userId instanceof mongoose.Types.ObjectId
-  //       ? userId
-  //       : new mongoose.Types.ObjectId(userId);
-
-  //   const checkuser = await User.findById(userId);
-  //   if (!checkuser) {
-  //     throw new ApiError(404, "User not found");
-  //   }
-  // }
-
-  // if (query && typeof query !== "string") {
-  //   throw new ApiError(400, "Invalid query value");
-  // }
   try {
+    let { page = 1, limit = 10, sortBy, sortType } = req.query;
+
+    if (page < 1 || limit < 1) {
+      throw new ApiError(400, "Invalid page or limit value");
+    }
+    if (sortBy && !["title", "views", "createdAt"].includes(sortBy)) {
+      throw new ApiError(400, "Invalid sortBy value");
+    }
+    if (sortType && !["asc", "desc"].includes(sortType)) {
+      throw new ApiError(400, "Invalid sortType value");
+    }
+
     const skip = (page - 1) * limit;
     const videos = await Video.aggregate([
       {
@@ -226,20 +206,20 @@ const publishAVideo = asyncHandler(async (req, res) => {
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
-  let { videoId } = req.params;
-
-  // Validate videoId
-  if (!isValidObjectId(videoId)) {
-    throw new ApiError(400, "Invalid video id");
-  }
-
-  // Convert videoId to ObjectId if necessary
-  videoId =
-    videoId instanceof mongoose.Types.ObjectId
-      ? videoId
-      : new mongoose.Types.ObjectId(videoId);
-
   try {
+    let { videoId } = req.params;
+
+    // Validate videoId
+    if (!isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid video id");
+    }
+
+    // Convert videoId to ObjectId if necessary
+    videoId =
+      videoId instanceof mongoose.Types.ObjectId
+        ? videoId
+        : new mongoose.Types.ObjectId(videoId);
+
     // Find the video by ID
     const video = await Video.findById(videoId);
     if (!video) {
@@ -258,19 +238,31 @@ const getVideoById = asyncHandler(async (req, res) => {
           from: "users",
           localField: "owner",
           foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                username: 1,
+                fullname: 1,
+                avatar: 1,
+              },
+            },
+          ],
           as: "owner",
         },
       },
       {
         $project: {
-          _id: 0,
-          "owner.username": 1,
-          "owner.fullname": 1,
-          "owner.createdAt": 1,
-          "owner.updatedAt": 1,
+          _id: 1,
+          title: 1,
           description: 1,
           videoFile: 1,
-          title: 1,
+          thumbnail: 1,
+          keys: 1,
+          duration: 1,
+          views: 1,
+          createdAt: 1,
+          owner: 1,
         },
       },
     ]);
@@ -279,7 +271,6 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!data || data.length === 0) {
       throw new ApiError(404, "Video details not found");
     }
-
     // Return the video details
     return res.json(
       new ApiResponse(200, data[0], "Fetched video successfully")
@@ -287,6 +278,74 @@ const getVideoById = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error("Error in getVideoById: ", error);
     throw new ApiError(500, "An error occurred while fetching the video");
+  }
+});
+
+const getisVideoLiked = asyncHandler(async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const user = req.user;
+    console.log("USer:", user);
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+    if (!isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid video id");
+    }
+
+    const like = await Like.aggregate([
+      {
+        $match: {
+          video: new mongoose.Types.ObjectId(videoId),
+          likedBy: user._id,
+        },
+      },
+
+      {
+        $count: "likedBy",
+      },
+      {
+        $project: {
+          _id: 0,
+          isLiked: { $gt: ["$likedBy", 0] }, // Check if likedBy count is greater than 0
+        },
+      },
+    ]);
+
+    const likesCount = await Like.aggregate([
+      {
+        $match: {
+          video: new mongoose.Types.ObjectId(videoId),
+        },
+      },
+      {
+        $count: "likesCount",
+      },
+      {
+        $project: {
+          _id: 0,
+          likesCount: { $ifNull: ["$likesCount", 0] }, // If no likes, return 0
+        },
+      },
+    ]);
+
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          isLiked: like?.length > 0 ? like[0].isLiked : false,
+          likesCount: !likesCount[0]?.likesCount ? 0 : likesCount[0].likesCount,
+        },
+        "Fetched like status successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error in getisVideoLiked: ", error);
+    throw new ApiError(
+      500,
+      "An error occurred while fetching like status",
+      error
+    );
   }
 });
 
@@ -308,7 +367,10 @@ const updateVideo = asyncHandler(async (req, res) => {
     }
     const { title, description } = req.body;
     const thumbnail = req.file?.path || undefined;
-    if (thumbnail && (thumbnail !== "" || thumbnail !== null || thumbnail !== undefined)) {
+    if (
+      thumbnail &&
+      (thumbnail !== "" || thumbnail !== null || thumbnail !== undefined)
+    ) {
       const thumbnailUrl = await uploadOnCloudinary(thumbnail, "image");
       if (!thumbnailUrl) {
         throw new ApiError(500, "An error occurred while uploading thumbnail");
@@ -432,4 +494,5 @@ export {
   updateVideo,
   deleteVideo,
   togglePublishStatus,
+  getisVideoLiked,
 };

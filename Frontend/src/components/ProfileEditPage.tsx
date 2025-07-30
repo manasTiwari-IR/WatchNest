@@ -6,11 +6,6 @@ import { useToaster, Message } from 'rsuite';
 
 const ProfileEditPage: React.FC = () => {
     const toaster = useToaster();
-    // Status messages for form submissions
-    const [profileUpdateStatus, setProfileUpdateStatus] = useState<string | null>(null);
-    const [avatarUpdateStatus, setAvatarUpdateStatus] = useState<string | null>(null);
-    const [coverImageUpdateStatus, setCoverImageUpdateStatus] = useState<string | null>(null);
-    const [passwordUpdateStatus, setPasswordUpdateStatus] = useState<string | null>(null);
     const apiURL = import.meta.env.VITE_api_URL;
     // Password visibility toggles
     const [showOldPassword, setShowOldPassword] = useState<boolean>(false);
@@ -140,7 +135,6 @@ const ProfileEditPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Error updating avatar:', error);
-            setAvatarUpdateStatus(null);
             toaster.push(
                 <Message type="error" showIcon>
                     Unable to update avatar. Please try again later.
@@ -177,7 +171,6 @@ const ProfileEditPage: React.FC = () => {
         }
         catch (error) {
             console.error('Error updating cover image:', error);
-            setCoverImageUpdateStatus(null);
             toaster.push(
                 <Message type="error" showIcon>
                     Unable to update cover image. Please try again later.
@@ -218,7 +211,6 @@ const ProfileEditPage: React.FC = () => {
         }
         catch (error) {
             console.error('Error updating password:', error);
-            setPasswordUpdateStatus(null);
             toaster.push(
                 <Message type="error" showIcon>
                     Unable to update password. Please try again later.

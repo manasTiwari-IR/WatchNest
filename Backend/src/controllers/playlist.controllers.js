@@ -31,71 +31,86 @@ const createPlaylist = asyncHandler(async (req, res) => {
 });
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-  //TODO: get user playlists
-  if (!isValidObjectId(userId)) {
-    throw new ApiError(400, "Invalid user ID");
-  }
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-  // some another user is trying to get another user's playlist
-  // show only public playlists
-  if (user._id.toString() !== userId) {
-    try {
-      const playlists = await Playlist.aggregate([
-        {
-          $match: {
-            owner: new mongoose.Types.ObjectId(userId),
-            isPublic: true, // Only public playlists
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            createdAt: 1,
-            videoCount: { $size: "$videos" }, // Count of videos in the playlist
-            isPublic: 1, // Include isPublic field
-          },
-        },
-      ]);
-      if (playlists.length == 0) {
-        throw new ApiError(404, "No playlists found");
-      }
-      return res.json(new ApiResponse(200, playlists, "User playlists found"));
-    } catch (error) {
-      console.error("Error getting user playlists", error);
-      throw new ApiError(500, error.message || "Error getting user playlists");
+  try {
+    const { userId } = req.params;
+    //TODO: get user playlists
+    if (!isValidObjectId(userId)) {
+      throw new ApiError(400, "Invalid user ID");
     }
-  } else {
-    try {
-      const playlists = await Playlist.aggregate([
-        {
-          $match: {
-            owner: new mongoose.Types.ObjectId(userId),
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+    // some another user is trying to get another user's playlist
+    // show only public playlists
+    if (user._id.toString() !== userId) {
+      try {
+        const playlists = await Playlist.aggregate([
+          {
+            $match: {
+              owner: new mongoose.Types.ObjectId(userId),
+              isPublic: true, // Only public playlists
+            },
           },
-        },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            createdAt: 1,
-            videoCount: { $size: "$videos" }, // Count of videos in the playlist
-            isPublic: 1, // Include isPublic field
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              createdAt: 1,
+              videoCount: { $size: "$videos" }, // Count of videos in the playlist
+              isPublic: 1, // Include isPublic field
+            },
           },
-        },
-      ]);
+        ]);
+        if (playlists.length == 0) {
+          throw new ApiError(404, "No playlists found");
+        }
+        return res.json(
+          new ApiResponse(200, playlists, "User playlists found")
+        );
+      } catch (error) {
+        console.error("Error getting user playlists", error);
+        throw new ApiError(
+          500,
+          error.message || "Error getting user playlists"
+        );
+      }
+    } else {
+      try {
+        const playlists = await Playlist.aggregate([
+          {
+            $match: {
+              owner: new mongoose.Types.ObjectId(userId),
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              createdAt: 1,
+              videoCount: { $size: "$videos" }, // Count of videos in the playlist
+              isPublic: 1, // Include isPublic field
+            },
+          },
+        ]);
 
-      if (playlists.length == 0) {
-        throw new ApiError(404, "No playlists found");
+        if (playlists.length == 0) {
+          throw new ApiError(404, "No playlists found");
+        }
+        return res.json(
+          new ApiResponse(200, playlists, "User playlists found")
+        );
+      } catch (error) {
+        console.error("Error getting user playlists", error);
+        throw new ApiError(
+          500,
+          error.message || "Error getting user playlists"
+        );
       }
-      return res.json(new ApiResponse(200, playlists, "User playlists found"));
-    } catch (error) {
-      console.error("Error getting user playlists", error);
-      throw new ApiError(500, error.message || "Error getting user playlists");
     }
+  } catch (error) {
+    console.error("Error getting user playlists", error);
+    throw new ApiError(500, "Error getting user playlists");
   }
 });
 
@@ -168,15 +183,15 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
-  const { playlistId, videoId } = req.params;
-  if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
-    throw new ApiError(400, "Invalid playlist or video ID");
-  }
-  if (!req.user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-
   try {
+    const { playlistId, videoId } = req.params;
+    if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid playlist or video ID");
+    }
+    if (!req.user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
     const video = await Video.findById(videoId).select("-keys");
     if (!video) {
       throw new ApiError(404, "Video not found");
@@ -199,7 +214,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     return res.json(new ApiResponse(200, playlist, "Video added to playlist"));
   } catch (error) {
     console.error("Error adding video to playlist", error);
-    throw new ApiError(500, "Error adding video to playlist");
+    throw error;
   }
 });
 

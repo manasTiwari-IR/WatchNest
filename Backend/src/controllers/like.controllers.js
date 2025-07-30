@@ -44,21 +44,24 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 });
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
-  const { commentId } = req.params;
-  //TODO: toggle like on comment
-  if (!isValidObjectId(commentId)) {
-    throw new ApiError(400, "Invalid comment id");
-  }
-
-  const user = req.user;
-
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-
-  const comment = await Like.findOne({ comment: commentId, likedBy: user._id });
-
   try {
+    const { commentId } = req.params;
+    //TODO: toggle like on comment
+    if (!isValidObjectId(commentId)) {
+      throw new ApiError(400, "Invalid comment id");
+    }
+
+    const user = req.user;
+
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const comment = await Like.findOne({
+      comment: commentId,
+      likedBy: user._id,
+    });
+
     if (comment) {
       await Like.findByIdAndDelete(comment._id);
       return res.json(
@@ -116,43 +119,53 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     const likedVideos = await Like.aggregate([
       {
         $match: {
-          likedBy: user._id,
+          likedBy: new mongoose.Types.ObjectId(user._id),
           video: { $exists: true },
+        },
+      },
+      {
+        $addFields: {
+          video: "$video",
         },
       },
       {
         $group: {
           _id: null,
-          videoIds: { $addToSet: "$video" },
-
-          //  $addToSet is used to avoid duplicate videoIds
-          // $push can also be used but it will add duplicate videoIds
+          videosId: {
+            $push: "$video",
+          },
         },
       },
       {
         $lookup: {
           from: "videos",
-          localField: "videoIds",
+          localField: "videosId",
           foreignField: "_id",
-          as: "videos",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                thumbnail: 1,
+                createdAt: 1,
+                views: 1,
+                duration: 1,
+              },
+            },
+          ],
+          as: "videosdata",
         },
       },
       {
         $project: {
           _id: 0,
-          videoIds: 1,
-          videos: {
-            title: 1,
-            description: 1,
-            thumbnail: 1,
-            createdAt: 1,
-          },
+          videosdata: 1,
         },
       },
     ]);
 
     if (!likedVideos || likedVideos.length === 0) {
-      return res.json(new ApiResponse(200, [], "No liked videos found"));
+      throw new ApiError(404, "No liked videos found");
     }
     console.log(likedVideos);
     return res.json(
@@ -160,7 +173,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     );
   } catch (error) {
     console.error("Error retrieving liked videos:", error);
-    throw new ApiError(500, "An error occurred while retrieving liked videos");
+    throw error instanceof ApiError
+      ? error
+      : new ApiError(500, "An error occurred while retrieving liked videos");
   }
 });
 

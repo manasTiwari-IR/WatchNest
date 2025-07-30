@@ -7,7 +7,7 @@ import useCustomHooks from '../functions/CustomHook';
 
 const YourVideoCard = lazy(() => import('./ProfileContentCardVideos.tsx'));
 
-interface HistoryProps {
+interface LikedVideosProps {
   _id: string;
   title: string;
   createdAt: string;
@@ -34,7 +34,7 @@ const LikedVideos: React.FC = () => {
   const apiURL = import.meta.env.VITE_api_URL;
 
   const [userdata, setuserData] = useState<UserDataProp>(initialUserData);
-  const [HistoryData, setHistoryData] = useState<HistoryProps[]>([]);
+  const [LikedVideosData, setLikedVideosData] = useState<LikedVideosProps[]>([]);
 
   useEffect(() => {
     if (data && key) {
@@ -54,41 +54,42 @@ const LikedVideos: React.FC = () => {
     }
   }, [data, key]);
 
-  const fetchHistory = async () => {
+  const fetchLikedVideos = async () => {
     try {
-      const response = await fetch(`${apiURL}/api/v1/users/history`, {
+      const response = await fetch(`${apiURL}/api/v1/likes/videos`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
       });
 
       if (response.ok) {
+        console.log(response);
         const data = await response.json();
-        setHistoryData(data.data.watchHistory);
+        setLikedVideosData(data.data[0].videosdata);
       } else {
-        throw new Error("Failed to fetch history");
+        throw new Error("Failed to fetch liked videos");
       }
     } catch (error) {
-      console.error("Error fetching history: ", error);
+      console.error("Error fetching liked videos: ", error);
       throw error;
     }
   };
 
   useEffect(() => {
     if (userdata._id) {
-      fetchHistory();
+      fetchLikedVideos();
     }
   }, [userdata, apiURL]);
   return (
     <section className='your-playlists-container' >
-      <p className='your-playlists-title' >History</p>
+      <p className='your-playlists-title' >Liked Videos</p>
       <div className="your-playlists-grid">
-        {HistoryData.length === 0 && (
+        {LikedVideosData.length === 0 && (
           <div className="no-videos-message">
-            <p>No videos found in your history.</p>
+            <p>No videos found in your liked videos.</p>
           </div>
         )}
-        {HistoryData.length > 0 && HistoryData.map((video) => (
+        {LikedVideosData.length > 0 && LikedVideosData.map((video) => (
           <Suspense key={video._id} fallback={
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
               <div style={{

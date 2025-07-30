@@ -9,8 +9,8 @@
 
 .Video-Stream-video-content-container {
   display: flex;
-  gap: 24px;
-  padding: 24px;
+  gap: 20px;
+  padding: 1rem;
   max-width: 1754px;
   margin: 0 auto;
 }
@@ -25,9 +25,9 @@
   position: relative;
   width: 100%;
   background-color: #000;
-  border-radius: 12px;
+  border-radius: .5rem;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: .5rem;
 }
 
 .Video-Stream-video-element {
@@ -90,68 +90,6 @@
   transform: translateY(0);
 }
 
-.Video-Stream-quality-selector {
-  position: relative;
-}
-
-.Video-Stream-speed-selector {
-  position: relative;
-  margin-right: 8px;
-}
-
-.Video-Stream-quality-button, .Video-Stream-speed-button {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.Video-Stream-quality-button:hover, .Video-Stream-speed-button:hover {
-  background-color: rgba(0, 0, 0, 0.9);
-}
-
-.Video-Stream-quality-dropdown, .Video-Stream-speed-dropdown {
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  background-color: rgba(28, 28, 28, 0.9);
-  border-radius: 4px;
-  overflow: hidden;
-  width: 120px;
-  margin-bottom: 8px;
-  display: none;
-  flex-direction: column;
-}
-
-.Video-Stream-quality-selector:hover .Video-Stream-quality-dropdown,
-.Video-Stream-speed-selector:hover .Video-Stream-speed-dropdown {
-  display: flex;
-}
-
-.Video-Stream-quality-option, .Video-Stream-speed-option {
-  padding: 8px 12px;
-  background: none;
-  border: none;
-  color: white;
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.Video-Stream-quality-option:hover, .Video-Stream-speed-option:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.Video-Stream-quality-option.active, .Video-Stream-speed-option.active {
-  color: #3ea6ff;
-}
-
 /* Loading and error states */
 .Video-Stream-loading-container,
 .Video-Stream-error-container {
@@ -175,8 +113,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .Video-Stream-back-home-link {
@@ -191,14 +134,14 @@
 
 /* Video information styles */
 .Video-Stream-video-info {
-  padding: 12px 0;
+  padding: 12px 8px;
   border-bottom: 1px solid #e5e5e5;
 }
 
 .Video-Stream-video-title {
   font-size: 20px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 3px;
   color: #0f0f0f;
   line-height: 1.4;
 }
@@ -222,7 +165,9 @@
 
 .Video-Stream-video-actions {
   display: flex;
+  background-color: #f2f2f2;
   align-items: center;
+  border-radius: 8px;
   gap: 8px;
 }
 
@@ -232,25 +177,39 @@
   gap: 6px;
   padding: 8px 16px;
   border: none;
-  background-color: #f2f2f2;
-  border-radius: 18px;
+  background-color: transparent;
   cursor: pointer;
   color: #0f0f0f;
   font-weight: 500;
   transition: background-color 0.2s ease;
 }
 
-.Video-Stream-action-button:hover {
+.Video-Stream-like-button {
+  border-radius: 8px 0 0 8px;
+}
+
+.Video-Stream-playlist-button {
+  border-radius: 0;
+}
+
+.Video-Stream-share-button {
+  border-radius: 0 8px 8px 0;
+}
+
+.Video-Stream-like-button:hover,
+.Video-Stream-playlist-button:hover,
+.Video-Stream-share-button:hover {
   background-color: #e5e5e5;
 }
 
-.Video-Stream-action-button.active {
+.Video-Stream-like-button.active {
   color: #065fd4;
 }
 
 .Video-Stream-like-button.active svg {
   fill: #065fd4;
   stroke: #065fd4;
+  stroke-width: 1px;
 }
 
 /* Channel information */
@@ -258,14 +217,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
-  margin-bottom: 16px;
+  padding: 12px 8px;
+  margin-bottom: 12px;
 }
 
 .Video-Stream-channel-details {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 1rem;
 }
 
 .Video-Stream-channel-avatar-link {
@@ -309,19 +268,20 @@
   font-weight: 500;
   font-size: 14px;
   transition: all 0.2s ease;
-  background-color: #0f0f0f;
+  background-color: #d72424;
   color: white;
   min-width: 108px;
   position: relative;
 }
 
 .Video-Stream-subscribe-button:hover {
-  background-color: #272727;
+  background-color: #a32d24;
 }
 
 .Video-Stream-subscribe-button.subscribed {
   background-color: #f2f2f2;
   color: #0f0f0f;
+  border: 1px solid #333;
 }
 
 .Video-Stream-subscribe-button.subscribed:hover {
@@ -357,12 +317,14 @@
   color: #0f0f0f;
   white-space: pre-wrap;
   overflow: hidden;
-  max-height: 80px;
+  max-height: 40px;
   transition: max-height 0.3s ease;
 }
 
 .Video-Stream-description-text.expanded {
-  max-height: 1000px; /* Arbitrary large value */
+  max-height: 1000px;
+  /* Arbitrary large value */
+  transition: max-height 0.2s ease;
 }
 
 .Video-Stream-show-more-button {
@@ -390,7 +352,7 @@
 .Video-Stream-comments-header {
   font-size: 16px;
   font-weight: 500;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   color: #0f0f0f;
 }
 
@@ -434,7 +396,7 @@
   gap: 8px;
 }
 
-.Video-Stream-cancel-button, 
+.Video-Stream-cancel-button,
 .Video-Stream-comment-submit-button {
   padding: 8px 16px;
   border-radius: 18px;
@@ -560,8 +522,15 @@
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .Video-Stream-playlist-modal-header {
@@ -755,30 +724,31 @@
 }
 
 .Video-Stream-recommended-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
-  margin-bottom: 16px;
+  margin-left: .5rem;
   color: #0f0f0f;
 }
 
 .Video-Stream-recommended-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: .8rem;
 }
 
 .Video-Stream-recommended-item {
   display: flex;
-  gap: 8px;
+  gap: 1rem;
   text-decoration: none;
   color: inherit;
   transition: background-color 0.2s ease;
   padding: 8px;
-  border-radius: 12px;
+  border-radius: 8px;
+  align-items: center;
 }
 
 .Video-Stream-recommended-item:hover {
-  background-color: #f2f2f2;
+  background-color: #ececec;
 }
 
 .Video-Stream-recommended-thumbnail {
@@ -851,7 +821,7 @@
   .Video-Stream-video-content-container {
     flex-direction: column;
   }
-  
+
   .Video-Stream-recommended-videos {
     width: 100%;
   }
@@ -859,25 +829,25 @@
 
 @media (max-width: 768px) {
   .Video-Stream-video-content-container {
-    padding: 16px;
+    padding: .5rem;
   }
-  
+
   .Video-Stream-video-stats {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .Video-Stream-video-actions {
     width: 100%;
     justify-content: space-around;
   }
-  
+
   .Video-Stream-channel-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .Video-Stream-subscribe-button {
     align-self: flex-start;
   }
@@ -887,8 +857,9 @@
   .Video-Stream-comment-input-container {
     gap: 8px;
   }
-  
-  .Video-Stream-user-avatar, .Video-Stream-comment-avatar {
+
+  .Video-Stream-user-avatar,
+  .Video-Stream-comment-avatar {
     width: 32px;
     height: 32px;
   }

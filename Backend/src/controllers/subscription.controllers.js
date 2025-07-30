@@ -6,31 +6,31 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const toggleSubscription = asyncHandler(async (req, res) => {
-  let { channelId } = req.params;
-  // TODO: toggle subscription
-  if (!isValidObjectId(channelId)) {
-    throw new ApiError(400, "Invalid channelId");
-  }
-  channelId = new mongoose.Types.ObjectId(channelId);
-
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-
-  const subscriber = await User.findById(user._id).select(
-    "-password -refreshToken -watchHistory"
-  );
-  if (!subscriber) {
-    throw new ApiError(404, "Subscriber not found");
-  }
-  const channel = await User.findById(channelId).select(
-    "-password -refreshToken -watchHistory"
-  );
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
   try {
+    let { channelId } = req.params;
+    // TODO: toggle subscription
+    if (!isValidObjectId(channelId)) {
+      throw new ApiError(400, "Invalid channelId");
+    }
+    channelId = new mongoose.Types.ObjectId(channelId);
+
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const subscriber = await User.findById(user._id).select(
+      "-password -refreshToken -watchHistory"
+    );
+    if (!subscriber) {
+      throw new ApiError(404, "Subscriber not found");
+    }
+    const channel = await User.findById(channelId).select(
+      "-password -refreshToken -watchHistory"
+    );
+    if (!channel) {
+      throw new ApiError(404, "Channel not found");
+    }
     const subscription = await Subscription.findOne({
       subscriber: subscriber._id,
       channel: channel._id,
@@ -51,7 +51,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     }
   } catch (error) {
     console.error("Error in toggleSubscription: ", error);
-    throw new ApiError(500, "Could not toggle subscription");
+    throw new ApiError(500, "Could not toggle subscription",error);
   }
 });
 
@@ -129,7 +129,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
       .populate("channel", "fullname username avatar _id")
       .select("channel");
 
-      // If no channels are subscribed, return an empty array
+    // If no channels are subscribed, return an empty array
     return res.json(
       new ApiResponse(
         200,

@@ -7,6 +7,7 @@ import {
   publishAVideo,
   togglePublishStatus,
   updateVideo,
+  getisVideoLiked,
 } from "../controllers/video.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
 import { upload } from "../middlewares/multer.middlewares.js";
@@ -38,6 +39,7 @@ router
   .delete(deleteVideo)
   .patch(upload.single("thumbnail"), updateVideo);
 
+router.route("/check/isLiked/:videoId").get(getisVideoLiked);
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
 
 export default router;

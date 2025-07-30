@@ -3,11 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useToaster, Message } from 'rsuite';
 import useCustomHooks from '../functions/CustomHook';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/Navbar.tsx';
 import '../cssfiles/VideoStreamPage.css';
 import defaultUserAvatar from '../assets/user-avatar.png';
 
-// Define interfaces for our data types
 interface VideoDetails {
   _id: string;
   title: string;
@@ -16,60 +15,87 @@ interface VideoDetails {
   thumbnail: string;
   duration: number;
   views: number;
-  isPublished: boolean;
-  owner: {
-    _id: string;
-    username: string;
-    fullname: string;
-    avatar?: string;
-  };
   createdAt: string;
-  updatedAt: string;
+  keys: string[];
+  owner: [
+    {
+      _id: string;
+      username: string;
+      fullname: string;
+      avatar: string[];
+    }
+  ];
 }
 
 interface Comment {
   _id: string;
   content: string;
-  video: string;
-  owner: {
+  createdAt: string;
+  isLiked: boolean;  // if comment is liked by req.user
+  owner: [{
     _id: string;
     username: string;
     fullname: string;
-    avatar?: string;
-  };
-  createdAt: string;
+    avatar: string[];
+  }];
 }
+
+interface UserDataProps {
+  _id: string;
+  username: string;
+  fullname: string;
+  avatar: string[];
+}
+
 
 const VideoStream: React.FC = () => {
   // Get video ID and channel ID from URL params
-  const { videoId , channelId } = useParams<{ videoId: string , channelId: string }>();
+  const { videoId, channelId } = useParams<{ videoId: string, channelId: string }>();
   const toaster = useToaster();
-  
+  const data = useSelector((state: any) => state.userData.data);
+  const key = useSelector((state: any) => state.userData.key);
+  const { verifyRefreshToken, decryptData, formatYouTubeDate } = useCustomHooks();
+  const verifyRefreshTokenResponse: boolean = useSelector((state: any) => state.verifyRefreshToken.val);
+  // console.log("verifyRefreshTokenResponse: ", verifyRefreshTokenResponse);
+
+  useEffect(() => {
+    //  console.log("useEffect called in Dashboard");
+    if (!verifyRefreshTokenResponse) {
+      console.log("Calling VerifyRefreshToken function");
+      verifyRefreshToken("/login");
+    }
+  }, []);
+
   // State for various data
   const [videoDetails, setVideoDetails] = useState<VideoDetails | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+  const [isYourChannel, setIsYourChannel] = useState<boolean>(false);
+
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likesCount, setLikesCount] = useState<number>(0);
+
   const [showFullDescription, setShowFullDescription] = useState<boolean>(false);
   const [newComment, setNewComment] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isCommentsLoading, setIsCommentsLoading] = useState<boolean>(true);
   const [showPlaylistModal, setShowPlaylistModal] = useState<boolean>(false);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [imagetype, setImageType] = useState<string>('jpg');
+
   const [playlists, setPlaylists] = useState<any[]>([]);
+
   const [subscribeButtonLoading, setSubscribeButtonLoading] = useState<boolean>(false);
+
   const [recommendedVideos, setRecommendedVideos] = useState<any[]>([]);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [videoQuality, setVideoQuality] = useState<string>("Auto");
-  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
+
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
 
   // User data from redux store
-  const [userData, setUserData] = useState<any>(null);
-  const data = useSelector((state: any) => state.userData.data);
-  const key = useSelector((state: any) => state.userData.key);
-  const { decryptData } = useCustomHooks();
-  
+  const [userData, setUserData] = useState<UserDataProps | null>(null);
+
+  // console.log("User data from redux store:", data, key);
   const videoRef = useRef<HTMLVideoElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const apiUrl = import.meta.env.VITE_api_URL;
@@ -78,14 +104,16 @@ const VideoStream: React.FC = () => {
   useEffect(() => {
     if (data && key) {
       decryptData(data, key)
-        .then((res: any) => {
+        .then((res: UserDataProps) => {
           setUserData(res);
+          // console.log("User data decrypted:", res);
         })
         .catch((error: any) => {
           console.error("Error decrypting user data: ", error);
+          throw new Error("Failed to decrypt user data");
         });
     }
-  }, [data, key, decryptData]);
+  }, [data, key]);
 
   // Fetch video details when component mounts or videoId changes
   useEffect(() => {
@@ -102,9 +130,11 @@ const VideoStream: React.FC = () => {
           return response.json();
         })
         .then(data => {
+          // console.log("Video details fetched:", data);
           setVideoDetails(data.data);
           checkLikeStatus(data.data._id);
-          checkSubscriptionStatus(data.data.owner._id);
+          checkSubscriptionStatus(data.data.owner[0]._id, data.data.owner[0].username);
+          setImageType(data.data.thumbnail.split('.').pop() || 'jpg');
           setIsLoading(false);
         })
         .catch(error => {
@@ -112,12 +142,13 @@ const VideoStream: React.FC = () => {
           toaster.push(
             <Message type="error" closable>
               Error loading video. Please try again.
-            </Message>
+            </Message>, { placement: 'topEnd' }
           );
           setIsLoading(false);
+          throw error;
         });
     }
-  }, [videoId, apiUrl, toaster]);
+  }, [videoId, apiUrl]);
 
   // Fetch comments when video details are loaded
   useEffect(() => {
@@ -134,12 +165,14 @@ const VideoStream: React.FC = () => {
           return response.json();
         })
         .then(data => {
+          // console.log("Comments fetched:", data);
           setComments(data.data);
           setIsCommentsLoading(false);
         })
         .catch(error => {
           console.error('Error fetching comments:', error);
           setIsCommentsLoading(false);
+          throw error;
         });
     }
   }, [videoDetails, apiUrl]);
@@ -158,6 +191,7 @@ const VideoStream: React.FC = () => {
           return response.json();
         })
         .then(data => {
+          // console.log("Playlists fetched:", data);
           setPlaylists(data.data);
         })
         .catch(error => {
@@ -165,11 +199,11 @@ const VideoStream: React.FC = () => {
         });
     }
   }, [userData, apiUrl]);
-  
+
   // Fetch recommended videos
   useEffect(() => {
     if (videoDetails) {
-      fetch(`${apiUrl}/api/v1/videos/recommendations/${videoDetails._id}?limit=6`, {
+      fetch(`${apiUrl}/api/v1/videos?page=1&limit=6&sortBy=createdAt&sortType=desc`, {
         method: 'GET',
         credentials: 'include',
       })
@@ -180,7 +214,8 @@ const VideoStream: React.FC = () => {
           return response.json();
         })
         .then(data => {
-          setRecommendedVideos(data.data);
+          // console.log("Recommended videos fetched:", data);
+          setRecommendedVideos(data.data[0].videos);
         })
         .catch(error => {
           console.error('Error fetching recommended videos:', error);
@@ -188,11 +223,16 @@ const VideoStream: React.FC = () => {
     }
   }, [videoDetails, apiUrl]);
 
+  // Add video to Hostory when VideoDetails are loaded
+  useEffect(() => {
+    if (videoDetails) {
+      addToWatchHistory();
+    }
+  }, [videoDetails]);
+
   // Check if user has liked the video
   const checkLikeStatus = (videoId: string) => {
-    if (!userData) return;
-    
-    fetch(`${apiUrl}/api/v1/likes/videos/${videoId}`, {
+    fetch(`${apiUrl}/api/v1/videos/check/isLiked/${videoId}`, {
       method: 'GET',
       credentials: 'include',
     })
@@ -203,6 +243,7 @@ const VideoStream: React.FC = () => {
         return response.json();
       })
       .then(data => {
+        // console.log("Like status checked:", data);
         setIsLiked(data.data.isLiked);
         setLikesCount(data.data.likesCount);
       })
@@ -212,10 +253,8 @@ const VideoStream: React.FC = () => {
   };
 
   // Check if user is subscribed to the channel
-  const checkSubscriptionStatus = (channelId: string) => {
-    if (!userData) return;
-    
-    fetch(`${apiUrl}/api/v1/subscriptions/c/${channelId}`, {
+  const checkSubscriptionStatus = (channelId: string, username: string) => {
+    fetch(`${apiUrl}/api/v1/users/c/${channelId}/${username}`, {
       method: 'GET',
       credentials: 'include',
     })
@@ -226,7 +265,9 @@ const VideoStream: React.FC = () => {
         return response.json();
       })
       .then(data => {
+        // console.log("Subscription status checked:", data);
         setIsSubscribed(data.data.isSubscribed);
+        setIsYourChannel(data.data.user[0].isYourChannel);
       })
       .catch(error => {
         console.error('Error checking subscription status:', error);
@@ -234,18 +275,18 @@ const VideoStream: React.FC = () => {
   };
 
   // Toggle like status
-  const toggleLike = () => {
+  const toggleLikeVideo = () => {
     if (!userData) {
       toaster.push(
         <Message type="info" closable>
           Please log in to like videos
-        </Message>
+        </Message>, { placement: 'topEnd' }
       );
       return;
     }
 
     if (!videoDetails) return;
-    
+
     fetch(`${apiUrl}/api/v1/likes/toggle/v/${videoDetails._id}`, {
       method: 'POST',
       credentials: 'include',
@@ -257,34 +298,35 @@ const VideoStream: React.FC = () => {
         return response.json();
       })
       .then(data => {
-        setIsLiked(data.data.isLiked);
-        setLikesCount(prev => data.data.isLiked ? prev + 1 : prev - 1);
+        // console.log("Like status toggled:", data);
+        setLikesCount((prev) => isLiked ? prev - 1 : prev + 1);
+        setIsLiked((prev) => !prev);
       })
       .catch(error => {
         console.error('Error toggling like:', error);
         toaster.push(
           <Message type="error" closable>
             Error updating like status
-          </Message>
+          </Message>, { placement: 'topEnd' }
         );
+        throw error;
       });
   };
-
   // Toggle subscription status
   const toggleSubscription = () => {
     if (!userData) {
       toaster.push(
         <Message type="info" closable>
           Please log in to subscribe to channels
-        </Message>
+        </Message>, { placement: 'topEnd' }
       );
       return;
     }
 
     if (!videoDetails) return;
     setSubscribeButtonLoading(true);
-    
-    fetch(`${apiUrl}/api/v1/subscriptions/c/${videoDetails.owner._id}`, {
+
+    fetch(`${apiUrl}/api/v1/subscriptions/c/${videoDetails.owner[0]._id}`, {
       method: 'POST',
       credentials: 'include',
     })
@@ -295,7 +337,8 @@ const VideoStream: React.FC = () => {
         return response.json();
       })
       .then(data => {
-        setIsSubscribed(data.data.isSubscribed);
+        // console.log("Subscription status toggled:", data);
+        setIsSubscribed((prev) => !prev);
         setSubscribeButtonLoading(false);
       })
       .catch(error => {
@@ -303,40 +346,77 @@ const VideoStream: React.FC = () => {
         toaster.push(
           <Message type="error" closable>
             Error updating subscription status
-          </Message>
+          </Message>, { placement: 'topEnd' }
         );
         setSubscribeButtonLoading(false);
+        throw error;
+      });
+  };
+
+  //Add video to Watch History
+  const addToWatchHistory = () => {
+    fetch(`${apiUrl}/api/v1/users/add/video-history/${videoDetails?._id}`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(response => {
+        if (response.status === 400) {
+          return;
+        } else if (!response.ok) {
+          throw new Error('Failed to add to watch history');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // console.log("Video added to watch history:", data);
+      })
+      .catch(error => {
+        console.error('Error adding to watch history:', error);
+        throw error;
       });
   };
 
   // Add video to playlist
   const addToPlaylist = (playlistId: string) => {
     if (!videoDetails) return;
-    
-    fetch(`${apiUrl}/api/v1/playlists/add/${playlistId}/${videoDetails._id}`, {
+
+    fetch(`${apiUrl}/api/v1/playlists/add/${videoDetails._id}/${playlistId}`, {
       method: 'PATCH',
       credentials: 'include',
     })
       .then(response => {
-        if (!response.ok) {
+        if (response.status === 400) {
+          return "Video already exists in this playlist";
+        } else if (!response.ok) {
           throw new Error('Failed to add to playlist');
         }
         return response.json();
       })
       .then(data => {
-        toaster.push(
-          <Message type="success" closable>
-            Video added to playlist
-          </Message>
-        );
-        setShowPlaylistModal(false);
+        if (data === "Video already exists in this playlist") {
+          toaster.push(
+            <Message type="info" closable>
+              Video already exists in this playlist
+            </Message>, { placement: 'topEnd' }
+          );
+          return;
+        }
+        else {
+          // console.log("Video added to playlist:", data);
+          toaster.push(
+            <Message type="success" closable>
+              Video added to playlist
+            </Message>, { placement: 'topEnd' }
+          );
+          setShowPlaylistModal(false);
+        }
       })
       .catch(error => {
         console.error('Error adding to playlist:', error);
         toaster.push(
           <Message type="error" closable>
             Error adding video to playlist
-          </Message>
+          </Message>, { placement: 'topEnd' }
         );
       });
   };
@@ -344,7 +424,7 @@ const VideoStream: React.FC = () => {
   // Add new comment
   const addComment = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newComment.trim() || !userData || !videoDetails) {
       return;
     }
@@ -364,7 +444,21 @@ const VideoStream: React.FC = () => {
         return response.json();
       })
       .then(data => {
-        setComments(prev => [data.data, ...prev]);
+        // console.log("Comment added:", data);
+        const newCommentData: Comment = {
+          _id: data.data.comment._id,
+          content: newComment,
+          createdAt: new Date().toISOString(),
+          isLiked: false,
+          owner: [{
+            _id: userData._id,
+            username: userData.username,
+            fullname: userData.fullname,
+            avatar: userData.avatar ? userData.avatar : [defaultUserAvatar],
+          },]
+        }
+        // console.log("New comment data:", newCommentData);
+        setComments(prev => [newCommentData, ...prev]);
         setNewComment('');
         if (commentInputRef.current) {
           commentInputRef.current.style.height = 'auto';
@@ -375,8 +469,9 @@ const VideoStream: React.FC = () => {
         toaster.push(
           <Message type="error" closable>
             Error adding comment
-          </Message>
+          </Message>, { placement: 'topEnd' }
         );
+        throw error;
       });
   };
 
@@ -388,26 +483,6 @@ const VideoStream: React.FC = () => {
       return (views / 1000).toFixed(1) + 'K';
     }
     return views.toString();
-  };
-
-  // Format date
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) {
-      return '1 day ago';
-    } else if (diffDays < 30) {
-      return `${diffDays} days ago`;
-    } else if (diffDays < 365) {
-      const months = Math.floor(diffDays / 30);
-      return `${months} ${months === 1 ? 'month' : 'months'} ago`;
-    } else {
-      const years = Math.floor(diffDays / 365);
-      return `${years} ${years === 1 ? 'year' : 'years'} ago`;
-    }
   };
 
   // Auto-resize comment input
@@ -438,25 +513,26 @@ const VideoStream: React.FC = () => {
 
   return (
     <div className="Video-Stream-video-stream-page">
-      <Navbar />
-      
+      <Navbar opendrawer={true} />
+
       <div className="Video-Stream-video-content-container">
         <div className="Video-Stream-video-player-section">
           {/* Video Player */}
           <div className="Video-Stream-video-player">
-            <video 
+            <video
               ref={videoRef}
-              // Use actual video file and thumbnail when available
-              src={videoDetails.videoFile || 'null'} 
-              poster={videoDetails.thumbnail || 'null'}
-              controls 
-              autoPlay
+              src={videoDetails.videoFile || 'null'}
+              poster={`https://res.cloudinary.com/${import.meta.env.VITE_cloudinary_client_id}/image/upload/q_70/${videoDetails.keys[1]}.${imagetype}` || 'null'}
+              controls
+              controlsList='nodownload'
+              autoPlay={false}
+              preload="metadata"
               className="Video-Stream-video-element"
               onPlay={() => setIsVideoPlaying(true)}
               onPause={() => setIsVideoPlaying(false)}
             />
             <div className="Video-Stream-center-controls">
-              <button 
+              <button
                 className="Video-Stream-play-pause-button"
                 onClick={() => {
                   if (videoRef.current) {
@@ -482,208 +558,23 @@ const VideoStream: React.FC = () => {
                 )}
               </button>
             </div>
-            
-            <div className="Video-Stream-player-controls">
-              <div className="Video-Stream-speed-selector">
-                <button className="Video-Stream-speed-button">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  <span>{playbackSpeed === 1 ? 'Normal' : playbackSpeed + 'x'}</span>
-                </button>
-                <div className="Video-Stream-speed-dropdown">
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 0.25 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 0.25;
-                        setPlaybackSpeed(0.25);
-                      }
-                    }}
-                  >
-                    0.25x
-                  </button>
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 0.5 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 0.5;
-                        setPlaybackSpeed(0.5);
-                      }
-                    }}
-                  >
-                    0.5x
-                  </button>
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 0.75 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 0.75;
-                        setPlaybackSpeed(0.75);
-                      }
-                    }}
-                  >
-                    0.75x
-                  </button>
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 1 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 1;
-                        setPlaybackSpeed(1);
-                      }
-                    }}
-                  >
-                    Normal
-                  </button>
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 1.25 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 1.25;
-                        setPlaybackSpeed(1.25);
-                      }
-                    }}
-                  >
-                    1.25x
-                  </button>
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 1.5 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 1.5;
-                        setPlaybackSpeed(1.5);
-                      }
-                    }}
-                  >
-                    1.5x
-                  </button>
-                  <button 
-                    className={`Video-Stream-speed-option ${playbackSpeed === 2 ? 'active' : ''}`}
-                    onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = 2;
-                        setPlaybackSpeed(2);
-                      }
-                    }}
-                  >
-                    2x
-                  </button>
-                </div>
-              </div>
-              <div className="Video-Stream-quality-selector">
-                <button className="Video-Stream-quality-button">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                  </svg>
-                  <span>{videoQuality}</span>
-                </button>
-                <div className="Video-Stream-quality-dropdown">
-                  <button 
-                    className={`Video-Stream-quality-option ${videoQuality === "Auto" ? "active" : ""}`}
-                    onClick={() => {
-                      // In a real implementation, this would switch to auto quality
-                      setVideoQuality("Auto");
-                      toaster.push(
-                        <Message type="info" closable>
-                          Quality set to Auto
-                        </Message>
-                      );
-                    }}
-                  >
-                    Auto
-                  </button>
-                  <button 
-                    className={`Video-Stream-quality-option ${videoQuality === "1080p" ? "active" : ""}`}
-                    onClick={() => {
-                      // In a real implementation, this would switch to 1080p quality
-                      setVideoQuality("1080p");
-                      toaster.push(
-                        <Message type="info" closable>
-                          Quality set to 1080p
-                        </Message>
-                      );
-                    }}
-                  >
-                    1080p
-                  </button>
-                  <button 
-                    className={`Video-Stream-quality-option ${videoQuality === "720p" ? "active" : ""}`}
-                    onClick={() => {
-                      // In a real implementation, this would switch to 720p quality
-                      setVideoQuality("720p");
-                      toaster.push(
-                        <Message type="info" closable>
-                          Quality set to 720p
-                        </Message>
-                      );
-                    }}
-                  >
-                    720p
-                  </button>
-                  <button 
-                    className={`Video-Stream-quality-option ${videoQuality === "480p" ? "active" : ""}`}
-                    onClick={() => {
-                      // In a real implementation, this would switch to 480p quality
-                      setVideoQuality("480p");
-                      toaster.push(
-                        <Message type="info" closable>
-                          Quality set to 480p
-                        </Message>
-                      );
-                    }}
-                  >
-                    480p
-                  </button>
-                  <button 
-                    className={`Video-Stream-quality-option ${videoQuality === "360p" ? "active" : ""}`}
-                    onClick={() => {
-                      // In a real implementation, this would switch to 360p quality
-                      setVideoQuality("360p");
-                      toaster.push(
-                        <Message type="info" closable>
-                          Quality set to 360p
-                        </Message>
-                      );
-                    }}
-                  >
-                    360p
-                  </button>
-                  <button 
-                    className={`Video-Stream-quality-option ${videoQuality === "240p" ? "active" : ""}`}
-                    onClick={() => {
-                      // In a real implementation, this would switch to 240p quality
-                      setVideoQuality("240p");
-                      toaster.push(
-                        <Message type="info" closable>
-                          Quality set to 240p
-                        </Message>
-                      );
-                    }}
-                  >
-                    240p
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Video Info */}
           <div className="Video-Stream-video-info">
             <h1 className="Video-Stream-video-title">{videoDetails.title}</h1>
-            
+
             <div className="Video-Stream-video-stats">
               <div className="Video-Stream-views-date">
                 <span className="Video-Stream-views">{formatViews(videoDetails.views)} views</span>
-                <span className="Video-Stream-date">{formatDate(videoDetails.createdAt)}</span>
+                <span className="Video-Stream-date">{formatYouTubeDate(videoDetails.createdAt)}</span>
               </div>
-              
+
               <div className="Video-Stream-video-actions">
-                <button 
+                {/* Like Count  */}
+                <button
                   className={`Video-Stream-action-button Video-Stream-like-button ${isLiked ? 'active' : ''}`}
-                  onClick={toggleLike}
+                  onClick={toggleLikeVideo}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M7 10v12"></path>
@@ -691,28 +582,22 @@ const VideoStream: React.FC = () => {
                   </svg>
                   <span>{likesCount}</span>
                 </button>
-                
-                <button 
+
+                {/* Save btn  */}
+                <button
                   className="Video-Stream-action-button Video-Stream-playlist-button"
                   onClick={() => setShowPlaylistModal(true)}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2Z"></path>
-                    <path d="M19 8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2Z"></path>
-                    <path d="M5 8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2Z"></path>
-                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="M9.5 6.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2zM4.5 2A2.5 2.5 0 0 0 2 4.5v9A2.5 2.5 0 0 0 4.5 16h9a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 13.5 2zM3 4.5A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 3 13.5zM7.5 18a3.5 3.5 0 0 1-2.45-1h9.45a2.5 2.5 0 0 0 2.5-2.5V5.05c.619.632 1 1.496 1 2.45v7a3.5 3.5 0 0 1-3.5 3.5z" /></svg>
                   <span>Save</span>
                 </button>
-                
-                <button 
+
+                {/* Share btn  */}
+                <button
                   className="Video-Stream-action-button Video-Stream-share-button"
                   onClick={() => setShowShareModal(true)}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                    <polyline points="16 6 12 2 8 6"></polyline>
-                    <line x1="12" y1="2" x2="12" y2="15"></line>
-                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.5 12a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0m5-5.5l-5 3.5m5 7.5l-5-3.5m10 4.5a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0m0-13a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0" /></svg>
                   <span>Share</span>
                 </button>
               </div>
@@ -722,23 +607,24 @@ const VideoStream: React.FC = () => {
           {/* Channel Info */}
           <div className="Video-Stream-channel-info">
             <div className="Video-Stream-channel-details">
-              <Link to={`/profile/${videoDetails.owner.username}/${videoDetails.owner._id}`} className="Video-Stream-channel-avatar-link">
-                <img 
-                  src={videoDetails.owner.avatar || defaultUserAvatar} 
-                  alt={videoDetails.owner.fullname} 
-                  className="Video-Stream-channel-avatar" 
+              <Link to={`/dashboard/profile/${videoDetails.owner[0].username}/${videoDetails.owner[0]._id}`} className="Video-Stream-channel-avatar-link">
+                <img
+                  src={videoDetails.owner[0].avatar[0] || defaultUserAvatar}
+                  alt={videoDetails.owner[0].fullname}
+                  className="Video-Stream-channel-avatar"
                 />
               </Link>
-              
+
               <div className="Video-Stream-channel-text">
-                <Link to={`/profile/${videoDetails.owner.username}/${videoDetails.owner._id}`} className="Video-Stream-channel-name">
-                  {videoDetails.owner.fullname}
+                <Link to={`/dashboard/profile/${videoDetails.owner[0].username}/${videoDetails.owner[0]._id}`} className="Video-Stream-channel-name">
+                  {videoDetails.owner[0].fullname}
                 </Link>
-                <span className="Video-Stream-channel-username">@{videoDetails.owner.username}</span>
+                <span className="Video-Stream-channel-username">@{videoDetails.owner[0].username}</span>
               </div>
             </div>
-            
-            <button 
+
+            <button
+              hidden={isYourChannel}
               className={`Video-Stream-subscribe-button ${isSubscribed ? 'subscribed' : ''}`}
               onClick={toggleSubscription}
               disabled={subscribeButtonLoading}
@@ -759,7 +645,7 @@ const VideoStream: React.FC = () => {
               {videoDetails.description}
             </div>
             {videoDetails.description.length > 150 && (
-              <button 
+              <button
                 className="Video-Stream-show-more-button"
                 onClick={() => setShowFullDescription(!showFullDescription)}
               >
@@ -773,14 +659,14 @@ const VideoStream: React.FC = () => {
             <h3 className="Video-Stream-comments-header">
               {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
             </h3>
-            
+
             {userData && (
               <form className="Video-Stream-comment-form" onSubmit={addComment}>
                 <div className="Video-Stream-comment-input-container">
-                  <img 
-                    src={userData.avatar || defaultUserAvatar} 
-                    alt={userData.fullname} 
-                    className="Video-Stream-user-avatar" 
+                  <img
+                    src={userData.avatar?.[0] || defaultUserAvatar}
+                    alt="User Avatar"
+                    className="Video-Stream-user-avatar"
                   />
                   <textarea
                     ref={commentInputRef}
@@ -792,8 +678,8 @@ const VideoStream: React.FC = () => {
                   />
                 </div>
                 <div className="Video-Stream-comment-buttons">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="Video-Stream-cancel-button"
                     onClick={() => {
                       setNewComment('');
@@ -804,8 +690,8 @@ const VideoStream: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="Video-Stream-comment-submit-button"
                     disabled={!newComment.trim()}
                   >
@@ -824,21 +710,21 @@ const VideoStream: React.FC = () => {
               <div className="Video-Stream-comments-list">
                 {comments.map(comment => (
                   <div key={comment._id} className="Video-Stream-comment">
-                    <Link to={`/profile/${comment.owner.username}/${comment.owner._id}`} className="Video-Stream-comment-avatar-link">
-                      <img 
-                        src={comment.owner.avatar || defaultUserAvatar} 
-                        alt={comment.owner.fullname} 
-                        className="Video-Stream-comment-avatar" 
+                    <Link to={`/dashboard/profile/${comment.owner[0].username}/${comment.owner[0]._id}`} className="Video-Stream-comment-avatar-link">
+                      <img
+                        src={comment.owner[0].avatar[0] || defaultUserAvatar}
+                        alt={comment.owner[0].fullname}
+                        className="Video-Stream-comment-avatar"
                       />
                     </Link>
-                    
+
                     <div className="Video-Stream-comment-content">
                       <div className="Video-Stream-comment-header">
-                        <Link to={`/profile/${comment.owner.username}/${comment.owner._id}`} className="Video-Stream-comment-author">
-                          {comment.owner.fullname}
+                        <Link to={`/dashboard/profile/${comment.owner[0].username}/${comment.owner[0]._id}`} className="Video-Stream-comment-author">
+                          {comment.owner[0].fullname}
                         </Link>
                         <span className="Video-Stream-comment-date">
-                          {formatDate(comment.createdAt)}
+                          {formatYouTubeDate(comment.createdAt)}
                         </span>
                       </div>
                       <p className="Video-Stream-comment-text">{comment.content}</p>
@@ -859,29 +745,35 @@ const VideoStream: React.FC = () => {
           <h3 className="Video-Stream-recommended-title">Recommended Videos</h3>
           {recommendedVideos.length > 0 ? (
             <div className="Video-Stream-recommended-list">
-              {recommendedVideos.map(video => (
-                <Link 
-                  to={`/video/${video.owner.username}/${video._id}`} 
-                  key={video._id} 
-                  className="Video-Stream-recommended-item"
-                >
-                  <div className="Video-Stream-recommended-thumbnail">
-                    <img src={video.thumbnail} alt={video.title} />
-                    <span className="Video-Stream-recommended-duration">
-                      {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}
-                    </span>
-                  </div>
-                  <div className="Video-Stream-recommended-info">
-                    <h4 className="Video-Stream-recommended-video-title">{video.title}</h4>
-                    <p className="Video-Stream-recommended-channel">{video.owner.fullname}</p>
-                    <div className="Video-Stream-recommended-meta">
-                      <span>{formatViews(video.views)} views</span>
-                      <span>•</span>
-                      <span>{formatDate(video.createdAt)}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              {recommendedVideos.map(video => {
+                if (video._id === videoDetails._id) return null; // Skip the current video
+                else {
+                  const recommendedimagetype = video.thumbnail.split('.').pop() || 'jpg';
+                  return (
+                    <Link
+                      to={`/video/${video.channel._id}/${video._id}`}
+                      key={video._id}
+                      className="Video-Stream-recommended-item"
+                    >
+                      <div className="Video-Stream-recommended-thumbnail">
+                        <img src={`https://res.cloudinary.com/${import.meta.env.VITE_cloudinary_client_id}/image/upload/q_40/${video.keys[1]}.${recommendedimagetype}`} alt={video.title} />
+                        <span className="Video-Stream-recommended-duration">
+                          {Math.floor(video?.duration ? video?.duration / 60 : 0)}:{Math.floor(video?.duration ? video?.duration % 60 : 0).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                      <div className="Video-Stream-recommended-info">
+                        <h4 className="Video-Stream-recommended-video-title">{video.title}</h4>
+                        <p className="Video-Stream-recommended-channel">{video.channel.fullname}</p>
+                        <div className="Video-Stream-recommended-meta">
+                          <span>{formatViews(video.views)} views</span>
+                          <span>•</span>
+                          <span>{formatYouTubeDate(video.createdAt)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                }
+              })}
             </div>
           ) : (
             <div className="Video-Stream-no-recommendations">
@@ -897,7 +789,7 @@ const VideoStream: React.FC = () => {
           <div className="Video-Stream-playlist-modal" onClick={e => e.stopPropagation()}>
             <div className="Video-Stream-playlist-modal-header">
               <h3>Save to...</h3>
-              <button 
+              <button
                 className="Video-Stream-close-modal-button"
                 onClick={() => setShowPlaylistModal(false)}
               >
@@ -907,12 +799,12 @@ const VideoStream: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="Video-Stream-playlist-list">
               {playlists.length > 0 ? (
                 playlists.map(playlist => (
                   <div key={playlist._id} className="Video-Stream-playlist-item">
-                    <button 
+                    <button
                       className="Video-Stream-playlist-select-button"
                       onClick={() => addToPlaylist(playlist._id)}
                     >
@@ -924,7 +816,7 @@ const VideoStream: React.FC = () => {
                 <p className="Video-Stream-no-playlists">You don't have any playlists yet.</p>
               )}
             </div>
-            
+
             <div className="Video-Stream-playlist-modal-footer">
               <Link to="/dashboard/playlists" className="Video-Stream-create-playlist-link">
                 Create new playlist
@@ -940,7 +832,7 @@ const VideoStream: React.FC = () => {
           <div className="Video-Stream-share-modal" onClick={e => e.stopPropagation()}>
             <div className="Video-Stream-share-modal-header">
               <h3>Share</h3>
-              <button 
+              <button
                 className="Video-Stream-close-modal-button"
                 onClick={() => setShowShareModal(false)}
               >
@@ -950,51 +842,30 @@ const VideoStream: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="Video-Stream-share-content">
               <div className="Video-Stream-share-link-container">
-                <input 
-                  type="text" 
-                  className="Video-Stream-share-link-input" 
-                  value={`${window.location.origin}/video/${videoDetails.owner.username}/${videoDetails._id}`}
+                <input
+                  type="text"
+                  className="Video-Stream-share-link-input"
+                  value={`${window.location.origin}/video/${videoDetails.owner[0].username}/${videoDetails._id}`}
                   readOnly
                 />
-                <button 
+                <button
                   className="Video-Stream-copy-link-button"
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/video/${videoDetails.owner.username}/${videoDetails._id}`);
+                    navigator.clipboard.writeText(`${window.location.origin}/video/${videoDetails.owner[0].username}/${videoDetails._id}`);
                     toaster.push(
                       <Message type="success" closable>
                         Link copied to clipboard!
-                      </Message>
+                      </Message>, { placement: 'topEnd' }
                     );
                   }}
                 >
                   Copy
                 </button>
               </div>
-              
-              <div className="Video-Stream-share-options">
-                <button className="Video-Stream-share-option">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#1877F2">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                  </svg>
-                  <span>Facebook</span>
-                </button>
-                <button className="Video-Stream-share-option">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#1DA1F2">
-                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5 0-.28-.03-.56-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
-                  </svg>
-                  <span>Twitter</span>
-                </button>
-                <button className="Video-Stream-share-option">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#25D366">
-                    <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.295-.771.964-.944 1.162-.175.195-.349.21-.646.075-.3-.15-1.263-.465-2.403-1.485-.888-.795-1.484-1.77-1.66-2.07-.174-.3-.019-.465.13-.615.136-.135.301-.345.451-.523.146-.181.194-.301.297-.496.1-.21.049-.375-.025-.524-.075-.15-.672-1.62-.922-2.206-.24-.584-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.523.074-.797.359-.273.3-1.045 1.02-1.045 2.475s1.07 2.865 1.219 3.075c.149.195 2.105 3.195 5.1 4.485.714.3 1.27.48 1.704.629.714.227 1.365.195 1.88.121.574-.091 1.767-.721 2.016-1.426.255-.705.255-1.29.18-1.425-.074-.135-.27-.21-.57-.345z"></path>
-                    <path d="M20.52 3.449C12.831-3.984.106 1.407.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652c1.746.943 3.71 1.444 5.715 1.447h.006c10.345 0 15.731-10.003 7.464-20.346zm-7.45 18.521h-.005c-2.801-.001-5.547-.794-7.907-2.295l-.566-.339-5.893 1.54 1.56-5.705-.37-.588c-1.632-2.435-2.484-5.316-2.48-8.352C2.409 4.988 8.907.709 17.089 5.122c6.14 3.291 6.331 12.42 1.415 15.949 2.451-1.158 4.51-4.018 4.382-7.523-.201-5.617-6.123-9.82-11.665-7.04-.48.24-1.589 1.342-2.296 2.628-.854 1.556-.765 4.366 1.425 7.25 2.278 2.994 5.303 5.187 8.097 5.895 3.734.943 8.14.642 9.401-2.31 1.4-3.272-2.161-5.835-3.925-6.946.288-.096.574-.188.84-.293 1.547-.604 9.345-3.324 5.23-9.972C21.815-.619 7.474-1.047 3.89 9.376c-1.174 3.421-.328 7.11 2.246 10.237z" fill-rule="nonzero"></path>
-                  </svg>
-                  <span>WhatsApp</span>
-                </button>
-              </div>
+
             </div>
           </div>
         </div>

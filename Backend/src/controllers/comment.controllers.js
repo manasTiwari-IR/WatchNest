@@ -7,24 +7,19 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
   //TODO: get all comments for a video
-  const { videoId } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(videoId)) {
-    throw new ApiError(400, "Invalid video id");
-  }
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-  // pagination - page and limit
-  // /api/videos/:videoId/comments?page=1&limit=10
-  const { page = 1, limit = 5 } = req.query;
   try {
-    const skip = (page - 1) * limit;
-    // const comments = await Comment.findOne({ video: new ObjectId(videoId) })
-    //   .sort({ createdAt: -1 })
-    //   .skip(skip)
-    //   .limit(limit)
-    //   .populate("content","owner");
+    const { videoId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid video id");
+    }
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+    // pagination - page and limit
+    // /api/videos/:videoId/comments?page=1&limit=10
+    // const { page = 1, limit = 5 } = req.query;
+    //   const skip = (page - 1) * limit;
 
     // using aggregate pipeline
     const comments = await Comment.aggregate([
@@ -34,7 +29,29 @@ const getVideoComments = asyncHandler(async (req, res) => {
           from: "users",
           localField: "owner",
           foreignField: "_id",
-          as: "user",
+          as: "owner",
+        },
+      },
+      {
+        $lookup: {
+          from: "likes",
+          let: { commentId: "$_id", userId: user._id }, // let operator to define variables
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  // use $expr to compare fields
+                  $and: [
+                    // use $and to combine conditions
+                    { $eq: ["$comment", "$$commentId"] }, // match comment id
+                    { $eq: ["$likedBy", "$$userId"] }, // match user id
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1 } }, // only return the _id field
+          ],
+          as: "likesData", // alias for the result
         },
       },
       {
@@ -42,19 +59,21 @@ const getVideoComments = asyncHandler(async (req, res) => {
           _id: 1,
           content: 1,
           createdAt: 1,
-          user: {
+          isLiked: { $gt: [{ $size: "$likesData" }, 0] }, // check if likesData array has any elements
+          owner: {
             _id: 1,
             username: 1,
-            email: 1,
+            fullname: 1,
+            avatar: 1,
           },
         },
       },
       { $sort: { createdAt: -1 } },
-      { $skip: skip },
-      { $limit: parseInt(limit) },
     ]);
 
-    return res.json(new ApiResponse(200, comments));
+    return res.json(
+      new ApiResponse(200, comments, "Comments retrieved successfully")
+    );
   } catch (error) {
     console.error("Error getting comments:", error);
     return new ApiError(500, "An error occurred while getting the comments");
@@ -63,27 +82,29 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
 const addComment = asyncHandler(async (req, res) => {
   // TODO: add a comment to a video
-  const { videoId } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(videoId)) {
-    throw new ApiError(400, "Invalid video id");
-  }
-  const { content } = req.body;
-  if (!content) {
-    throw new ApiError(400, "Comment content is required");
-  }
-  const user = req.user;
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
-
   try {
+    const { videoId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid video id");
+    }
+    const { content } = req.body;
+    if (!content) {
+      throw new ApiError(400, "Comment content is required");
+    }
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
     const comment = await Comment.create({
       video: videoId,
       owner: user._id,
       content,
     });
     comment.save();
-    return res.json(new ApiResponse(201, null, "Comment added successfully"));
+    return res.json(
+      new ApiResponse(201, { comment }, "Comment added successfully")
+    );
   } catch (error) {
     console.error("Error adding comment:", error);
     return new ApiError(500, "An error occurred while adding the comment");

@@ -551,7 +551,6 @@ a:hover {
 }
 
 .hamburger {
-    display: none;
     flex-direction: column;
     gap: 4px;
     background: none;

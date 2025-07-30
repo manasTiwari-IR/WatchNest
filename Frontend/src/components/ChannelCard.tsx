@@ -8,7 +8,7 @@ const ChannelCard: React.FC<{ id: string, channelName: string, imageURL: string 
 
     }
     return (
-        <Link className="Subscription-dropdown-item" to={`/dashboard/profile/${channelName}/${id}`}>
+        <Link title={channelName} className="Subscription-dropdown-item" to={`/dashboard/profile/${channelName}/${id}`}>
             <img
                 src={imageURL}
                 // src={channel-name || "../src/assets/user-avatar.png"}

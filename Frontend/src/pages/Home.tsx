@@ -221,24 +221,6 @@ const Home: React.FC = () => {
                     title="Share Anywhere"
                     desc="Send videos to friends and family."
                 />
-                <Feature
-                    icon={
-                        <svg width="40" height="40" fill="#2a5298" viewBox="0 0 24 24">
-                            <path d="M17 10.5V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3.5l4 4v-11l-4 4z" fill="#2a5298" opacity="1" />
-                        </svg>
-                    }
-                    title="Share Anywhere"
-                    desc="Send videos to friends and family."
-                />
-                <Feature
-                    icon={
-                        <svg width="40" height="40" fill="#2a5298" viewBox="0 0 24 24">
-                            <path d="M17 10.5V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3.5l4 4v-11l-4 4z" fill="#2a5298" opacity="1" />
-                        </svg>
-                    }
-                    title="Share Anywhere"
-                    desc="Send videos to friends and family."
-                />
             </div>
             <style>
                 {`

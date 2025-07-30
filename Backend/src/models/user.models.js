@@ -27,14 +27,14 @@ const userSchema = new Schema(
     },
     avatar: {
       // array of strings
-      type:[String],
-      required: true,
+      type: [String],
+      required: false,
       default: [],
     },
     coverimage: {
       // array of strings
-      type:[String],
-      required: true,
+      type: [String],
+      required: false,
       default: [],
     },
     password: {

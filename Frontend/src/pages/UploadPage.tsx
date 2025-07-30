@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToaster, Message } from 'rsuite';
-import { Formik, Form, Field, ErrorMessage, FormikProps } from 'formik';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as yup from 'yup';
 import "../cssfiles/UploadStyles.css";
 import Navbar from '../components/Navbar.tsx';
@@ -125,7 +125,7 @@ const UploadPage: React.FC = () => {
 
   return (
     <div className="upload-container">
-      <Navbar />
+      <Navbar opendrawer={false} />
       <div className="form-container">
         <h2 className="form-title">Upload New Video</h2>
         <Formik

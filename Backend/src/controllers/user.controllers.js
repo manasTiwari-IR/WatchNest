@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { Subscription } from "../models/subscription.models.js";
+import { Video } from "../models/video.models.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
@@ -50,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // $or is a mongodb operator
   // that performs a logical OR operation on an array of two or more <expressions> and selects the documents that satisfy at least one of the <expressions>.
-  console.log("Checking for existing user");
+  // console.log("Checking for existing user");
   try {
     await User.findOne({
       $or: [{ email }, { username }],
@@ -62,7 +63,7 @@ const registerUser = asyncHandler(async (req, res) => {
           throw new ApiError(400, "Username already exists");
         }
       }
-      console.log("No existing user found");
+      // console.log("No existing user found");
     });
 
     const user = await User.create({
@@ -80,7 +81,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken"
     );
-    console.log("Created User", createdUser);
+    // console.log("Created User", createdUser);
     if (!createdUser) {
       throw new ApiError(
         500,
@@ -92,7 +93,7 @@ const registerUser = asyncHandler(async (req, res) => {
       user._id
     );
 
-    console.log("User created successfully");
+    // console.log("User created successfully");
 
     const key = await generateKey();
 
@@ -114,7 +115,7 @@ const registerUser = asyncHandler(async (req, res) => {
         new ApiResponse(201, { createdUser, key }, "User created successfully")
       );
   } catch (error) {
-    console.log("User Creation failed", error);
+    console.error("User Creation failed", error);
     throw new ApiError(409, `Error while creating user: ${error.message}`);
   }
 });
@@ -363,9 +364,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullname, email } = req.body;
-  console.log("Updating account details", fullname, email);
   try {
+    const { fullname, email } = req.body;
     if (!fullname) {
       throw new ApiError(400, "Fullname are required");
     }
@@ -384,7 +384,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       { new: true }
     ).select("-password -refreshToken");
 
-    console.log("Updated User", user);
     return res
       .status(200)
       .json(new ApiResponse(200, user, "Account details updated successfully"));
@@ -502,140 +501,211 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-  const { id, username } = req.params;
-  // find by user ID
-  if (!mongoose.isValidObjectId(id)) {
-    throw new ApiError(400, "Invalid user ID");
-  }
-  if (!req.user._id) {
-    throw new ApiError(401, "Unauthorized");
-  }
-  // console.log("User ID from params:", id);
-  // console.log("req.user._id:", req.user?._id);
-  const user = await User.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(id),
-      },
-    },
-    {
-      // if req.user is same as channel ID then isYourChannel is true
-      $addFields: {
-        isYourChannel: {
-          $eq: ["$_id", new mongoose.Types.ObjectId(req.user._id)],
+  try {
+    const { id, username } = req.params;
+    // find by user ID
+    if (!mongoose.isValidObjectId(id)) {
+      throw new ApiError(400, "Invalid user ID");
+    }
+    if (!req.user._id) {
+      throw new ApiError(401, "Unauthorized");
+    }
+    // console.log("User ID from params:", id);
+    // console.log("req.user._id:", req.user?._id);
+    const user = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
         },
       },
-    },
-    {
-      $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foreignField: "channel",
-        as: "subscribers",
+      {
+        // if req.user is same as channel ID then isYourChannel is true
+        $addFields: {
+          isYourChannel: {
+            $eq: ["$_id", new mongoose.Types.ObjectId(req.user._id)],
+          },
+        },
       },
-    },
-    {
-      $project: {
-        username: 1,
-        fullname: 1,
-        avatar: 1,
-        coverimage: 1,
-        email: 1,
-        isYourChannel: 1, // Include isYourChannel field
-        subscribersCount: { $size: "$subscribers" }, // Count subscribers
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers",
+        },
       },
-    },
-  ]);
-  const isSubscribed = await Subscription.aggregate([
-    // true if user has already subscribed to the channel
-    {
-      $match: {
-        subscriber: new mongoose.Types.ObjectId(req.user._id),
-        channel: new mongoose.Types.ObjectId(id),
+      {
+        $project: {
+          username: 1,
+          fullname: 1,
+          avatar: 1,
+          coverimage: 1,
+          email: 1,
+          isYourChannel: 1, // Include isYourChannel field
+          subscribersCount: { $size: "$subscribers" }, // Count subscribers
+        },
       },
-    },
-    {
-      $count: "isSubscribed",
-    },
-    {
-      $project: {
-        isSubscribed: { $gt: ["$isSubscribed", 0] }, // true if count is greater than 0
+    ]);
+    const isSubscribed = await Subscription.aggregate([
+      // true if user has already subscribed to the channel
+      {
+        $match: {
+          subscriber: new mongoose.Types.ObjectId(req.user._id),
+          channel: new mongoose.Types.ObjectId(id),
+        },
       },
-    },
-  ]);
-  if (!user || user.length === 0) {
-    throw new ApiError(404, "User not found");
-  }
-  // if (!channel) {
-  //   throw new ApiError(404, "Channel not found");
-  // }
+      {
+        $count: "isSubscribed",
+      },
+      {
+        $project: {
+          isSubscribed: { $gt: ["$isSubscribed", 0] }, // true if count is greater than 0
+        },
+      },
+    ]);
+    if (!user || user.length === 0) {
+      throw new ApiError(404, "User not found");
+    }
 
-  // console.log("Channel", channel);
-  // console.log("User", user);
-
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, { user, isSubscribed }, "Channel profile details")
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { user, isSubscribed: isSubscribed[0]?.isSubscribed || false },
+          "Channel profile details"
+        )
+      );
+  } catch (error) {
+    console.error("Error while fetching channel profile:", error);
+    throw new ApiError(
+      500,
+      "Something went wrong while fetching channel profile"
     );
+  }
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = await User.aggregate([
-    {
-      $match: {
-        // new mongoose.Types.ObjectId(req.user._id) is used to convert string to ObjectId
-        _id: new mongoose.Types.ObjectId(req.user._id),
+  try {
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+    const watchHistory = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(user._id),
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "videos",
-        localField: "watchHistory.video",
-        foreignField: "_id",
-        as: "watchHistory",
-        // pipeline is used to project only the necessary fields
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "uploader",
-              foreignField: "_id",
-              as: "owner",
-              pipeline: [
-                {
-                  $project: {
-                    fullname: 1,
-                    username: 1,
-                    avatar: 1,
-                  },
-                },
-              ],
+      {
+        $lookup: {
+          from: "videos",
+          localField: "watchHistory",
+          foreignField: "_id",
+          as: "videosdata",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                thumbnail: 1,
+                createdAt: 1,
+                views: 1,
+                duration: 1,
+              },
             },
-          },
-          {
-            $addFields: {
-              owner: { $arrayElemAt: ["$owner", 0] },
-            },
-          },
-        ],
+          ],
+        },
       },
-    },
-  ]);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
+      {
+        $project: {
+          _id: 0,
+          videosdata: 1,
+        },
+      },
+    ]);
+    if (!watchHistory || watchHistory.length === 0) {
+      throw new ApiError(404, "Watch history not found");
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { watchHistory: watchHistory[0].videosdata },
+          "Watch history fetched successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error while fetching watch history", error);
+    throw error;
   }
+});
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        user[0]?.watchHistory,
-        "Watch history fetched successfully"
-      )
-    );
+const addVideoToHistory = asyncHandler(async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    if (!videoId) {
+      throw new ApiError(400, "Video ID is required");
+    }
+    const user = req.user;
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const video = await User.findById(user._id).select("watchHistory");
+    if (video.watchHistory.some((v) => v.toString() === videoId)) {
+      // If the video is already in the watch history, bring it at the top of the array
+      video.watchHistory = video.watchHistory.filter(
+        (v) => v.toString() !== videoId
+      );
+      video.watchHistory.unshift(new mongoose.Types.ObjectId(videoId)); // unshift adds the video to the beginning of the array
+      await video.save();
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { alreadySaved: true },
+            "Video added to watch history"
+          )
+        );
+    } else {
+      // If the video is not in the watch history, add it to the beginning of the array
+      video.watchHistory.unshift(new mongoose.Types.ObjectId(videoId));
+      await video.save();
+
+      //increase the view count of the video
+      // Assuming you have a Video model to update the view count
+      const videoToUpdate = await Video.findById(
+        new mongoose.Types.ObjectId(videoId)
+      );
+      if (videoToUpdate) {
+        videoToUpdate.views += 1;
+        await videoToUpdate.save();
+      }
+
+      // If the watch history exceeds 100 videos, remove the oldest video
+      if (video.watchHistory.length > 100) {
+        // pop removes the last element from the array
+        video.watchHistory.pop();
+        await video.save();
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { alreadySaved: false },
+            "Video added to watch history"
+          )
+        );
+    }
+  } catch (error) {
+    console.error("Error while adding video to history", error);
+    throw error;
+  }
 });
 
 export {
@@ -651,4 +721,5 @@ export {
   getUserChannelProfile,
   getWatchHistory,
   verifyRefreshToken,
+  addVideoToHistory,
 };
