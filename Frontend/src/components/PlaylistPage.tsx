@@ -29,6 +29,7 @@ const PlaylistPage: React.FC = () => {
     const { playlistid } = useParams<{ playlistid: string }>();
     const [playlistVideos, setPlaylistVideos] = useState<PlaylistVideo[]>([]);
     const [playlistDetails, setPlaylistDetails] = useState<PlaylistDetails>(initPlaylistDetails);
+    const [isOwner, setIsOwner] = useState<boolean>(false);
     const [error, setError] = useState<boolean>(false);
     const toaster = useToaster();
     const apiURL = import.meta.env.VITE_api_URL;
@@ -50,6 +51,7 @@ const PlaylistPage: React.FC = () => {
                 // console.log("Playlist details fetched successfully:", data);
                 setPlaylistDetails(data.data);
                 setPlaylistVideos(data.data.videos);
+                setIsOwner(data.data.isOwner);
                 toaster.push(
                     <Message type="success" showIcon>
                         Playlist details fetched successfully!
@@ -145,7 +147,7 @@ const PlaylistPage: React.FC = () => {
                     }>
                         <PlaylistVideoCard id={video._id} title={video.title} createdAt={video.createdAt} views={video.views} duration={video.duration} playlistid={playlistid}
                             channelid={video.owner} thumbnail={video.thumbnail}
-                            hideVideodeleteFromPlaylist={false}
+                            hideVideodeleteFromPlaylist={!isOwner}
                             hidedropdown={true} setVideoData={() => { }} setPlaylistVideos={setPlaylistVideos} />
                     </Suspense>
                 ))}

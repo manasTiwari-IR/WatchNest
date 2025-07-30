@@ -129,12 +129,11 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     if (!playlist) {
       throw new ApiError(404, "Playlist not found");
     }
-    if (
-      playlist.isPublic === false &&
-      playlist.owner.toString() !== user._id.toString()
-    ) {
+    const isOwner = playlist.owner.toString() === user._id.toString();
+    if (playlist.isPublic === false && !isOwner) {
       throw new ApiError(403, "Forbidden: Playlist is private");
     }
+
     const data = await Playlist.aggregate([
       {
         $match: {
@@ -175,7 +174,9 @@ const getPlaylistById = asyncHandler(async (req, res) => {
       },
     ]);
     // console.log("Playlist found", data);
-    return res.json(new ApiResponse(200, data[0], "Playlist found"));
+    return res.json(
+      new ApiResponse(200, { ...data[0], isOwner }, "Playlist found")
+    );
   } catch (error) {
     console.error("Error getting playlist by ID", error);
     throw new ApiError(500, error.message || "Error getting playlist by ID");

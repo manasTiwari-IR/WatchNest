@@ -84,7 +84,7 @@ const Profile: React.FC = () => {
       }).then((data) => {
         // console.log('Channel data:', data);
         setChannel(data.data.user[0]);
-        setIsSubscribed(data.data.isSubscribed[0]?.isSubscribed || false);
+        setIsSubscribed(data.data?.isSubscribed || false);
       }).catch((error) => {
         console.error('Error fetching channel data:', error);
       });

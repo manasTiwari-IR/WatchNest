@@ -352,7 +352,7 @@ const VideoStream: React.FC = () => {
         throw error;
       });
   };
-
+  
   //Add video to Watch History
   const addToWatchHistory = () => {
     fetch(`${apiUrl}/api/v1/users/add/video-history/${videoDetails?._id}`, {

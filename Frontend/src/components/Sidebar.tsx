@@ -14,10 +14,7 @@ interface SubscribedChannelsResponse {
         _id: string;
         fullname: string;
         username: string;
-        avatar: {
-            url: string;
-            public_id: string;
-        }
+        avatar: string[];
     }
 }
 const Sidebar: React.FC = () => {
@@ -141,7 +138,7 @@ const Sidebar: React.FC = () => {
                     <div className={`transform transition-transform duration-200 ${isSubscriptionOpen ? 'translate-y-0' : '-translate-y-4'}`}>
                         {subscribedChannelData && subscribedChannelData.length > 0 ? (
                             subscribedChannelData.map((channel, index) => (
-                                <ChannelCard key={index} id={channel.channel._id} channelName={channel.channel.fullname} imageURL={channel.channel.avatar.url} />
+                                <ChannelCard key={index} id={channel.channel._id} channelName={channel.channel.fullname} imageURL={channel.channel.avatar[0]} />
                             ))
                         ) : (
                             <p className="text-gray-500 p-2 text-center text-[12px]">No subscribed channels found</p>
