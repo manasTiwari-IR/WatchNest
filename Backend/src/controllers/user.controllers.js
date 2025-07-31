@@ -102,13 +102,13 @@ const registerUser = asyncHandler(async (req, res) => {
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 15 * 24 * 60 * 60 * 1000,
       })
       .cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
         maxAge: 60 * 60 * 1000,
       })
       .json(
@@ -158,13 +158,13 @@ const loginUser = asyncHandler(async (req, res) => {
     const refresh_options = {
       httpOnly: true, // cookie is not accessible via client side script
       secure: process.env.NODE_ENV === "production", // cookie will only be set on secure connections
-      sameSite: "Strict", // cookie will only be sent in a first-party context
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // cookie will only be sent in a first-party context
       maxAge: 15 * 24 * 60 * 60 * 1000, // cookie will expire in 7 days
     };
     const access_options = {
       httpOnly: true, // protects against XSS attacks (XSS - cross site scripting)
       secure: process.env.NODE_ENV === "production", // protects against MITM attacks (MITM - man in the middle)
-      sameSite: "Strict", // protects against CSRF attacks (CSRF - cross site request forgery)
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // protects against CSRF attacks (CSRF - cross site request forgery)
       maxAge: 60 * 60 * 1000, // cookie will expire in 15 minutes
     };
 
@@ -208,13 +208,13 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const refreshoptions = {
       httpOnly: true, // cookie is not accessible via client side script
       secure: process.env.NODE_ENV === "production", // cookie will only be set on secure connections
-      sameSite: "Strict", // cookie will only be sent in a first-party context
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict", // cookie will only be sent in a first-party context
       maxAge: 15 * 24 * 60 * 60 * 1000,
     };
     const accessoptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
       maxAge: 60 * 60 * 1000,
     };
 
@@ -253,7 +253,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     maxAge: 0,
   };
 
@@ -282,7 +282,7 @@ const verifyRefreshToken = asyncHandler(async (req, res) => {
     const options = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
       maxAge: 0,
     };
 
@@ -304,13 +304,13 @@ const verifyRefreshToken = asyncHandler(async (req, res) => {
         .cookie("refreshToken", refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "Strict",
+          sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
           maxAge: 15 * 24 * 60 * 60 * 1000,
         })
         .cookie("accessToken", accessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "Strict",
+          sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
           maxAge: 60 * 60 * 1000,
         })
         .json(
