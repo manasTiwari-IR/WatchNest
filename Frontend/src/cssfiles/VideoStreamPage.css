@@ -863,4 +863,7 @@
     width: 32px;
     height: 32px;
   }
+  .Video-Stream-center-controls{
+    opacity: 0 !important;
+  }
 }
