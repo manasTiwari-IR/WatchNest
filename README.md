@@ -182,7 +182,7 @@ npm run dev
 
 ## 🎮 Usage
 
-1. **Access the application** at `http://localhost:5173`
+1. **Access the application** at `watchnest-frontend.vercel.app`
 2. **Register** a new account or **login** with existing credentials
 3. **Upload videos** from your dashboard
 4. **Explore** videos on the home page
