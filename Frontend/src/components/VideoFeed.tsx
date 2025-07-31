@@ -1,5 +1,5 @@
-import React, { use } from 'react'
-import { useState, useEffect, useCallback, useRef } from "react";
+import React from 'react'
+import { useState, useEffect, useCallback } from "react";
 import { Suspense, lazy } from 'react';
 import InfiniteScroll from "react-infinite-scroll-component";
 

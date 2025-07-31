@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import WatchNestLogo from "../assets/android-chrome-512x512 (2).png";
+import HomePagePng from "../assets/home-page.png";
 
 // Responsive styles
 const responsiveFont = {
@@ -8,10 +10,6 @@ const responsiveFont = {
     fontWeight: 700,
 };
 
-const responsiveDesc = {
-    fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
-    color: "#e0e0e0",
-};
 
 const Home: React.FC = () => {
 
@@ -35,7 +33,7 @@ const Home: React.FC = () => {
         >
             <div className="homepage-header" style={{ display: "flex", width: "90%", padding: "1rem", marginTop: ".5rem", alignItems: "center", gap: "1.1rem", }}>
                 <img
-                    src="../src/assets/android-chrome-512x512 (2).png"
+                    src={WatchNestLogo}
                     className="home-logo"
                     alt="VidTube Logo"
                     width={65}
@@ -170,7 +168,7 @@ const Home: React.FC = () => {
                     }}
                 >
                     <img
-                        src="../src/assets/home-page.png"
+                        src={HomePagePng}
                         alt="Video Streaming Illustration"
                         style={{
                             width: "100%",

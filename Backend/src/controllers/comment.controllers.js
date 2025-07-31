@@ -6,7 +6,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
-  //TODO: get all comments for a video
   try {
     const { videoId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(videoId)) {

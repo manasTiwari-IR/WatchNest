@@ -49,8 +49,8 @@ interface UserDataProps {
 
 
 const VideoStream: React.FC = () => {
-  // Get video ID and channel ID from URL params
-  const { videoId, channelId } = useParams<{ videoId: string, channelId: string }>();
+  // Get video ID from URL params
+  const { videoId } = useParams<{ videoId: string }>();
   const toaster = useToaster();
   const data = useSelector((state: any) => state.userData.data);
   const key = useSelector((state: any) => state.userData.key);
@@ -297,7 +297,7 @@ const VideoStream: React.FC = () => {
         }
         return response.json();
       })
-      .then(data => {
+      .then(_ => {
         // console.log("Like status toggled:", data);
         setLikesCount((prev) => isLiked ? prev - 1 : prev + 1);
         setIsLiked((prev) => !prev);
@@ -336,7 +336,7 @@ const VideoStream: React.FC = () => {
         }
         return response.json();
       })
-      .then(data => {
+      .then(_ => {
         // console.log("Subscription status toggled:", data);
         setIsSubscribed((prev) => !prev);
         setSubscribeButtonLoading(false);
@@ -352,7 +352,7 @@ const VideoStream: React.FC = () => {
         throw error;
       });
   };
-  
+
   //Add video to Watch History
   const addToWatchHistory = () => {
     fetch(`${apiUrl}/api/v1/users/add/video-history/${videoDetails?._id}`, {
@@ -367,8 +367,8 @@ const VideoStream: React.FC = () => {
         }
         return response.json();
       })
-      .then(data => {
-        // console.log("Video added to watch history:", data);
+      .then(_ => {
+        // console.log("Video added to watch history:", _);
       })
       .catch(error => {
         console.error('Error adding to watch history:', error);

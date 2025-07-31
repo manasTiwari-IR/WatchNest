@@ -8,7 +8,7 @@ interface NotFoundProps {
 
 function ErrorPage() {
   const location = useLocation();
-  const { statusCode = 404, message = "Page Not Found", imageUrl } = location.state as NotFoundProps || {};
+  const {message = "Page Not Found", imageUrl } = location.state as NotFoundProps || {};
   return (
     <div
       className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 h-screen text-center font-sans bg-gray-100 p-5"

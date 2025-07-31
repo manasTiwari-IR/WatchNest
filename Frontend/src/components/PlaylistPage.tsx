@@ -52,12 +52,6 @@ const PlaylistPage: React.FC = () => {
                 setPlaylistDetails(data.data);
                 setPlaylistVideos(data.data.videos);
                 setIsOwner(data.data.isOwner);
-                toaster.push(
-                    <Message type="success" showIcon>
-                        Playlist details fetched successfully!
-                    </Message>,
-                    { placement: 'topEnd', duration: 2000 }
-                );
             } else {
                 console.error("Failed to fetch playlist details:", response.statusText);
                 toaster.push(

@@ -162,7 +162,6 @@ const LoginPage: React.FC = () => {
                         console.error("Navigation error:", e);
                         navigate("/error-page", {
                             state: {
-                                statusCode: 500,
                                 message: "Something went wrong.",
                                 imageUrl: "../src/assets/something-went-wrong.png"
 

@@ -389,7 +389,7 @@ a:hover {
 .video-title {
     font-weight: 600;
     font-size: 1rem;
-    width: min(auto , 100%);
+    width: min(auto, 100%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     /* margin-bottom: 0.3rem; */
     color: #222;
@@ -415,7 +415,9 @@ a:hover {
     height: 30px;
     border-radius: 50%;
     object-fit: cover;
-    margin-right: 0.5rem;
+    margin-right: .5rem;
+    margin-left: .3rem;
+    margin-top: .2rem;
     outline-offset: 2px;
     outline: 1px solid #ccc;
 }

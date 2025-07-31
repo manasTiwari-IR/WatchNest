@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { useToaster, Message } from "rsuite";
+import React, { useEffect } from "react";
+import { Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
 // import CryptoJS from "crypto-js";
 import Navbar from "../components/Navbar.tsx";
 import Sidebar from "../components/Sidebar.tsx";
@@ -30,7 +29,7 @@ const Dashboard: React.FC = () => {
     return (
         <>
             <div className="dashboard-container">
-                <Navbar />
+                <Navbar opendrawer={false} />
 
                 {/* Main Content */}
                 < main className="main-content" >

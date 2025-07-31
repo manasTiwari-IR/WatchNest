@@ -2,6 +2,8 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import useCustomHooks from '../functions/CustomHook.ts';
 import '../cssfiles/DashboardStyles.css'
+import defaultThumbnail from '../assets/default_thumbnail.png';
+import defaultUserAvatar from '../assets/user-avatar.png';
 
 interface ApiVideoResponse {
     _id: string;
@@ -33,8 +35,8 @@ const VideoCard: React.FC<{ video: ApiVideoResponse }> = ({ video }) => {
             >
                 <div className="video-thumb-wrapper">
                     <img
-                        src={thumbnail_url || "../src/assets/default_thumbnail.png"}
-                        alt="../src/assets/default_thumbnail.png"
+                        src={thumbnail_url || defaultThumbnail}
+                        alt="Video Thumbnail"
                         className="video-thumb"
                     />
                     <span
@@ -81,7 +83,7 @@ const VideoCard: React.FC<{ video: ApiVideoResponse }> = ({ video }) => {
                 <div className="video-info" style={{ transition: "transform 0.2s ease" }}>
                     <div className="video-title">
                         <img
-                            src={video?.channel?.avatar[0] || "../src/assets/user-avatar.png"}
+                            src={video?.channel?.avatar[0] || defaultUserAvatar}
                             alt="User Avatar"
                             className="avatar channel-avatar"
                             style={{ transition: "transform 0.3s ease" }}

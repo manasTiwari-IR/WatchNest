@@ -7,7 +7,7 @@ import * as yup from "yup";
 import { useToaster, Message } from "rsuite";
 import 'rsuite/dist/rsuite.min.css';
 import CryptoJS from "crypto-js";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { setUserData } from "../ReduxStateManagement/varSlice.ts";
 import { setVerifyRefreshToken } from "../ReduxStateManagement/responseSlice.ts";
 

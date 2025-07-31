@@ -163,7 +163,7 @@ npm install
 
 **Option 1: Start both servers together (from Frontend directory)**
 ```bash
-npm start
+npm run start
 ```
 
 **Option 2: Start servers separately**
@@ -171,7 +171,7 @@ npm start
 Backend:
 ```bash
 cd Backend
-npm run start
+npm run devstart
 ```
 
 Frontend:
@@ -251,6 +251,7 @@ WatchNest/
 - Enhance search functionality with advanced filters
 - Performance optimizations for large-scale video handling
 - Implement dark mode
+
 
 
 ## 🤝 Contributing
