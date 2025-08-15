@@ -272,7 +272,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 **Manas Tiwari**
 - GitHub: [@manasTiwari-IR](https://github.com/manasTiwari-IR)
-- Project: [VidTube Repository](https://github.com/manasTiwari-IR/WatchNest)
+- Project: [WatchNest Repository](https://github.com/manasTiwari-IR/WatchNest)
 
 ## 🙏 Special Thanks
 
