@@ -280,7 +280,7 @@ I would like to express my gratitude to:
 
 - **Hitesh Choudhary** - For invaluable guidance and inspiration
 - **The open-source community** - For providing amazing tools and libraries
-- **Github Copilot** - For assisting with code and making development smoother
+- **Github Copilot & Google Gemini** - For assisting with code and making development smoother
 
 ---
 Your contributions and support have been essential to making this project possible.
