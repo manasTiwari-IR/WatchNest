@@ -79,15 +79,20 @@ const UploadPage: React.FC = () => {
       formdata.append('description', values.description);
       formdata.append('videoFile', values.videoFile as File);
       formdata.append('thumbnail', values.thumbnailImage as File);
-
+      console.log("FormData entries:");
+      for (const pair of formdata.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
+      }
+      console.log("Submitting form data to API...");
       const response = await fetch(`${apiURL}/api/v1/videos/upload`, {
         method: "POST",
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        // headers: {
+        //   'Content-Type': 'multipart/form-data',
+        // },
         body: formdata,
         credentials: "include", // Include cookies in the request
       });
+      console.log("response: ", response);
       console.log("Response Status:", response.status);
       if (response.status === 201 || response.status === 200) {
         const responseData = await response.json();
